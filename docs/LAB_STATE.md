@@ -325,3 +325,61 @@ aws ec2 authorize-security-group-ingress --group-id sg-0db21b6219faa2fca --proto
 - [ ] Documentation complète (README, RUNBOOKS)
 - [ ] Preuves (captures, rapports) dans `docs/evidence/`
 - [ ] Aucun secret dans le repo
+
+---
+
+## MISE À JOUR - 2026-02-08 (fin de journée)
+
+### Session complète : MVP local + Tests d'intégration
+
+**Durée** : ~4h (12h30-16h30)
+
+**Réalisations** :
+- ✅ API FastAPI : 5 routes fonctionnelles
+- ✅ PostgreSQL : intégré avec Docker Compose
+- ✅ Tests : 7 tests (2 unitaires + 5 intégration)
+- ✅ Git : 12 commits propres
+- ✅ Documentation : 1500+ lignes
+
+**État actuel** :
+```bash
+# Tests
+pytest -v  # 7 passed ✅
+
+# Docker
+docker compose up --build -d  # API + PostgreSQL ✅
+
+# Routes
+curl http://localhost:8000/health  # {"status":"ok"} ✅
+curl http://localhost:8000/projects  # Liste projets depuis DB ✅
+```
+
+**Prochaines étapes** :
+1. Jalon 2 : Déploiement EC2 (Ansible)
+2. Jalon 3 : CI/CD Jenkins
+3. Jalon 4 : DevSecOps scans
+
+**Fichiers clés** :
+- `app/main.py` : API complète
+- `app/database.py` : Connexion PostgreSQL
+- `app/models.py` : Modèle Project
+- `tests/conftest.py` : Fixtures pytest
+- `tests/test_integration.py` : Tests d'intégration
+- `docker-compose.yml` : 2 services
+
+**Commandes essentielles** :
+```bash
+# Tests
+pytest -v
+
+# Docker
+docker compose up --build -d
+docker compose logs --follow
+docker compose down
+
+# Git
+git log --oneline --decorate -n 12
+
+# API
+curl http://localhost:8000/docs  # Swagger UI
+```
