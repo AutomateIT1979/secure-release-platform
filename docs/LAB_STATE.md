@@ -240,10 +240,10 @@ ssh -i ~/.ssh/lab-devops-key.pem ubuntu@35.180.54.218
 
 ### Jalon 1 — Fixer le blocage actuel (local WSL)
 1. ✅ **FAIT** : Connexion SSH EC2 rétablie (IP mise à jour)
-2. ⏭️ **NEXT** : Ajouter `pytest.ini` pour fixer l'import `app`
-3. ⏭️ Versionner le code applicatif (`git add app/ tests/ Dockerfile docker-compose.yml requirements.txt`)
-4. ⏭️ Tester `docker compose up --build`
-5. ⏭️ Vérifier healthcheck : `curl http://localhost:8000/health`
+2. ✅ **FAIT** : pytest.ini ajouté, tests passent pour fixer l'import `app`
+3. ✅ Code applicatif versionné (commit 9d1d7c3) (`git add app/ tests/ Dockerfile docker-compose.yml requirements.txt`)
+4. ✅ Docker Compose testé (healthcheck OK)
+5. ✅ Healthcheck OK : {"status":"ok"} : `curl http://localhost:8000/health`
 
 ### Jalon 2 — Préparer EC2
 1. Installer Docker + Docker Compose sur EC2 (via Ansible ou script)
