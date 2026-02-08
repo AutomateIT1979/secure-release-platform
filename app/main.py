@@ -13,3 +13,14 @@ def version():
         "commit": "9d1d7c3",
         "build_date": "2026-02-08"
     }
+
+@app.get("/projects")
+def list_projects():
+    """Retourne la liste des projets"""
+    return {
+        "projects": [
+            {"id": 1, "name": "Secure Release Platform", "status": "active"},
+            {"id": 2, "name": "DevSecOps Lab", "status": "active"},
+            {"id": 3, "name": "CI/CD Pipeline", "status": "planned"}
+        ]
+    }
