@@ -383,3 +383,49 @@ git log --oneline --decorate -n 12
 # API
 curl http://localhost:8000/docs  # Swagger UI
 ```
+
+---
+
+## MISE À JOUR - 2026-02-08 (Jalon 2 : Ansible + Docker EC2)
+
+### Session Jalon 2 : Installation Docker sur EC2 via Ansible
+
+**Durée** : 30 minutes
+
+**Réalisations** :
+- ✅ Structure Ansible créée (playbooks, inventories)
+- ✅ Inventaire staging avec EC2 configuré
+- ✅ Playbook install_docker.yml fonctionnel
+- ✅ Docker 29.2.1 installé sur EC2
+- ✅ Docker Compose v2.24.5 installé sur EC2
+- ✅ Test hello-world réussi
+
+**État EC2** :
+```bash
+# Docker version
+ssh ubuntu@35.180.54.218 "docker --version"
+# Docker version 29.2.1, build a5c7197
+
+# Docker Compose version
+ssh ubuntu@35.180.54.218 "docker-compose --version"
+# Docker Compose version v2.24.5
+
+# Service actif
+systemctl status docker
+# active (running)
+```
+
+**Fichiers Ansible** :
+- `ansible/inventories/staging/hosts.yml` : Configuration EC2
+- `ansible/playbooks/install_docker.yml` : Installation Docker
+
+**Commande pour réinstaller** :
+```bash
+ansible-playbook -i ansible/inventories/staging/hosts.yml \
+  ansible/playbooks/install_docker.yml
+```
+
+**Prochaines étapes** :
+1. Jalon 3 : Déployer l'API + PostgreSQL sur EC2
+2. Jalon 4 : Pipeline Jenkins (CI/CD)
+3. Jalon 5 : Scans DevSecOps
