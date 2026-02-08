@@ -1,0 +1,68 @@
+---
+- name: Deploy Secure Release Platform API to EC2
+  hosts: staging
+  become: yes
+  vars:
+    app_dir: /opt/secure-release-platform
+  
+  tasks:
+    - name: Create application directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy application files with rsync
+      shell: |
+        rsync -avz \
+          --exclude=.git \
+          --exclude=.venv \
+          --exclude=__pycache__ \
+          --exclude=*.pyc \
+          --exclude=.pytest_cache \
+          --exclude=test.db \
+          --exclude=docs \
+          --exclude=ansible \
+          --exclude=tests \
+          -e "ssh -i ~/.ssh/lab-devops-key.pem -o StrictHostKeyChecking=no" \
+          {{ playbook_dir }}/../../ ubuntu@{{ ansible_host }}:{{ app_dir }}/
+      delegate_to: localhost
+      become: no
+
+    - name: Set proper ownership
+      file:
+        path: "{{ app_dir }}"
+        owner: ubuntu
+        group: ubuntu
+        recurse: yes
+
+    - name: Stop existing containers (if any)
+      shell: docker compose down
+      args:
+        chdir: "{{ app_dir }}"
+      become_user: ubuntu
+      ignore_errors: yes
+
+    - name: Start application with Docker Compose
+      shell: docker compose up --build -d
+      args:
+        chdir: "{{ app_dir }}"
+      become_user: ubuntu
+
+    - name: Wait for API to be ready
+      wait_for:
+        port: 8000
+        delay: 5
+        timeout: 60
+
+    - name: Test API health endpoint
+      uri:
+        url: http://localhost:8000/health
+        return_content: yes
+      register: health_check
+
+    - name: Display health check result
+      debug:
+        msg: "API health check: {{ health_check.json }}"
