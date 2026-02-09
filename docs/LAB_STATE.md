@@ -429,3 +429,29 @@ ansible-playbook -i ansible/inventories/staging/hosts.yml \
 1. Jalon 3 : Déployer l'API + PostgreSQL sur EC2
 2. Jalon 4 : Pipeline Jenkins (CI/CD)
 3. Jalon 5 : Scans DevSecOps
+
+---
+
+## MISE À JOUR - 2026-02-08 (Jalon 4 : Jenkins partiel)
+
+### Session Jalon 4 : Installation Jenkins (partiel)
+
+**Durée** : 1h30
+
+**Réalisations** :
+- ✅ Jenkins 2.541.1 installé sur EC2
+- ✅ Port 8080 ouvert
+- ✅ Interface accessible (http://35.180.54.218:8080)
+- ✅ Jenkinsfile créé et versionné
+- ❌ Configuration job bloquée (permissions repo)
+
+**Leçons apprises** :
+- Jenkins sur EC2 + repo sur WSL = complexité inutile
+- Solution future : Git remote (GitHub/GitLab) ou repo bare sur EC2
+- Ansible fonctionne déjà très bien pour déploiement
+
+**État final** :
+- 3 jalons complétés sur 6
+- 17 commits Git
+- API en production
+- Infrastructure prête pour CI/CD (besoin configuration)
