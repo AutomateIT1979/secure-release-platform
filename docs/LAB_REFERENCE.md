@@ -388,3 +388,145 @@ docker compose ps
 
 **Règle** : En cas de conflit, `LAB_REFERENCE.md` fait foi.
 
+
+---
+
+## 12) SYSTÈME D'AUDIT ET SYNCHRONISATION
+
+### 12.1 Usage dans Claude Desktop Projects
+
+**⚠️ IMPORTANT** : Ce fichier est utilisé comme "Project Knowledge" dans Claude Desktop.
+
+**Fichiers du projet Claude Desktop** :
+- `Secure_Release_Platform_DevSecOps_Project.md` : Planification initiale (obsolète)
+- `LAB_REFERENCE.md` : **Source de vérité actuelle** ← CE FICHIER
+
+**Règle de priorité** : En cas de conflit, `LAB_REFERENCE.md` fait foi.
+
+---
+
+### 12.2 Protocole de mise à jour
+
+**Quand mettre à jour ce fichier** :
+- ✅ Après chaque jalon complété
+- ✅ Après modification infrastructure AWS
+- ✅ Après ajout/modification d'outils
+- ✅ Quand une section "DERNIÈRE INFO CONNUE" devient obsolète
+
+**Comment mettre à jour** :
+1. Modifier `docs/LAB_REFERENCE.md` dans le repo Git
+2. Commit + Push
+3. **Mettre à jour dans TOUS les projets Claude Desktop qui l'utilisent**
+
+---
+
+### 12.3 Checklist d'audit (à exécuter avant chaque session)
+
+**Commandes de vérification** :
+```bash
+cd ~/lab-devops/secure-release-platform
+
+# 1) Vérifier versions outils
+echo "=== VERSIONS ==="
+python3 --version
+docker --version
+ansible --version
+
+# 2) Vérifier état Git
+echo "=== GIT ==="
+git status --porcelain
+git log --oneline -3
+
+# 3) Vérifier structure projet
+echo "=== STRUCTURE ==="
+ls -1 app/ tests/ ansible/playbooks/
+
+# 4) Vérifier connectivité AWS (si applicable)
+echo "=== AWS ==="
+aws sts get-caller-identity 2>/dev/null || echo "AWS CLI non configuré ou erreur"
+
+# 5) Date du dernier audit
+echo "=== AUDIT ==="
+echo "Dernière vérification LAB_REFERENCE.md : $(stat -c %y docs/LAB_REFERENCE.md | cut -d' ' -f1)"
+echo "Date actuelle : $(date +%Y-%m-%d)"
+```
+
+**Résultat attendu** : Si écart > 7 jours, mettre à jour `LAB_REFERENCE.md`.
+
+---
+
+### 12.4 Synchronisation multi-projets Claude Desktop
+
+**Si ce fichier est utilisé dans plusieurs projets Claude Desktop** :
+
+1. **Projet principal** : `DevOps` (ce projet)
+2. **Projets secondaires** : Lister ici
+
+**⚠️ RAPPEL** : Après modification de `LAB_REFERENCE.md` :
+1. Commit dans Git
+2. Copier dans `/mnt/project/` de CHAQUE projet Claude Desktop
+3. Vérifier que tous les projets ont la même version
+
+**Commande de vérification** :
+```bash
+# Dans chaque projet Claude Desktop
+md5sum docs/LAB_REFERENCE.md
+# Tous doivent avoir le même hash
+```
+
+---
+
+### 12.5 Avertissements pour l'IA
+
+**Instructions pour Claude (ou toute IA)** :
+
+1. **TOUJOURS** lire `LAB_REFERENCE.md` avant de répondre à une question sur le Lab
+2. **VÉRIFIER** la date de "Dernière vérification" en début de document
+3. **SIGNALER** si une info semble obsolète (> 14 jours)
+4. **NE JAMAIS** supposer l'état de l'infrastructure AWS sans vérification
+5. **EXIGER** des preuves (commandes + outputs) avant de conclure
+
+**En cas de doute** :
+- Proposer UNE commande de diagnostic
+- Attendre l'output avant de continuer
+- Mettre à jour `LAB_REFERENCE.md` si nécessaire
+
+---
+
+### 12.6 Historique des audits
+
+| Date | Auditeur | Changements détectés | Actions |
+|------|----------|---------------------|---------|
+| 2026-02-20 | administrator | Création document initial | N/A |
+| | | | |
+| | | | |
+
+**Instructions** : Ajouter une ligne après chaque audit complet.
+
+---
+
+## ANNEXE C — TEMPLATE COMMIT MESSAGE
+
+Pour maintenir la cohérence Git, utiliser ces préfixes :
+```
+feat: Nouvelle fonctionnalité
+fix: Correction de bug
+docs: Documentation uniquement
+test: Ajout/modification tests
+chore: Tâches de maintenance
+refactor: Refactoring code
+ci: CI/CD pipeline
+ansible: Playbooks Ansible
+```
+
+**Exemple** :
+```bash
+git commit -m "docs: update LAB_REFERENCE.md - audit 2026-02-20"
+```
+
+---
+
+**FIN DU DOCUMENT**
+**Dernière modification** : 2026-02-20 par administrator
+**Version** : 1.1
+**Hash** : À calculer après commit
