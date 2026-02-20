@@ -220,6 +220,24 @@ aws ec2 authorize-security-group-ingress \
 
 ---
 
+
+### 5.5 Script d'auto-update Security Group
+**Script** : `scripts/update-aws-sg.sh`  
+**Usage** : `./scripts/update-aws-sg.sh`
+
+**Fonctionnement** :
+1. Détecte IP publique actuelle
+2. Nettoie anciennes règles
+3. Autorise nouvelle IP (ports 22, 80, 8080)
+
+**Résout** : Problème d'IP dynamique (NordVPN + DHCP)
+
+**Commande à exécuter avant chaque session** :
+```bash
+cd ~/lab-devops/secure-release-platform
+./scripts/update-aws-sg.sh
+```
+
 ## 6) JALONS COMPLÉTÉS — ✅ VÉRIFIÉ (Git)
 
 ### Jalon 1 — MVP local (✅ COMPLÉTÉ)
@@ -264,7 +282,7 @@ aws ec2 authorize-security-group-ingress \
 3. **Security Group 0.0.0.0/0** (⚠️ risque sécurité)
 4. **Script auto-update** Security Group au démarrage
 
-**Statut** : Non résolu, nécessite décision architecture.
+**Statut** : ✅ RÉSOLU via script auto-update (commit 5e8c3fe)
 
 ### 7.2 Jenkins-Git connectivité
 **Symptôme** : Jenkins (EC2) ne peut pas cloner le repo (WSL)  
