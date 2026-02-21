@@ -1,3 +1,15 @@
+# TAG: AUTOMATION-BATCH-P1-PY
+# PURPOSE: Version endpoint unit tests
+# SCOPE: API version validation
+# SAFETY: No database required
+
+"""
+Version Endpoint Tests
+
+Tests:
+- test_version_returns_correct_format: Verify version format
+- test_version_not_empty: Verify version is not empty
+"""
 from fastapi.testclient import TestClient
 from app.main import app
 

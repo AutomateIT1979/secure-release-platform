@@ -1,3 +1,30 @@
+# TAG: AUTOMATION-BATCH-P1-PY
+# PURPOSE: FastAPI REST API for Secure Release Platform
+# SCOPE: Backend application server
+# SAFETY: Input validation on all endpoints, rate limiting recommended
+
+"""
+Secure Release Platform - REST API
+
+Framework: FastAPI 0.104.1
+Python: 3.12+
+Database: PostgreSQL (via SQLAlchemy)
+Port: 8000
+
+Endpoints:
+  GET  /health              → {"status":"ok"}
+  GET  /version             → {"version":"1.0"}
+  GET  /projects            → List all projects
+  GET  /projects/{id}       → Get single project  
+  POST /projects            → Create new project
+
+Tests: pytest (7 passing)
+Docs: http://localhost:8000/docs (Swagger UI)
+
+Author: DevOps Developer
+Created: 2026-02-08
+Updated: 2026-02-17
+"""
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List

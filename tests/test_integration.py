@@ -1,3 +1,18 @@
+# TAG: AUTOMATION-BATCH-P1-PY
+# PURPOSE: Full integration tests (API + Database)
+# SCOPE: End-to-end workflow validation
+# SAFETY: Uses test database, isolated tests
+
+"""
+Integration Tests
+
+Tests:
+- test_create_project: Create project via API
+- test_get_projects: List projects from database
+- test_get_project_by_id: Fetch single project
+- test_update_project_status: Update project status
+- test_project_workflow: Complete workflow (create → get → update)
+"""
 import pytest
 from app.models import Project as ProjectModel
 

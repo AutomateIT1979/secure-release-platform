@@ -1,3 +1,19 @@
+# TAG: AUTOMATION-BATCH-P1-PY
+# PURPOSE: pytest configuration and shared fixtures
+# SCOPE: Test environment setup
+# SAFETY: Isolated test database, cleanup after tests
+
+"""
+Pytest Configuration
+
+Fixtures:
+- client: FastAPI TestClient
+- db_session: Database session for tests
+- sample_project: Pre-created project fixture
+
+Setup: Creates test database before tests
+Teardown: Cleans up database after tests
+"""
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine

@@ -1,3 +1,9 @@
+# TAG: AUTOMATION-BATCH-P1-PY
+# PURPOSE: Python dependencies for FastAPI application
+# SCOPE: Application runtime environment
+# SAFETY: Pin versions for reproducibility
+#
+# Install with: pip install -r requirements.txt
 fastapi==0.110.0
 uvicorn[standard]==0.27.1
 SQLAlchemy==2.0.27

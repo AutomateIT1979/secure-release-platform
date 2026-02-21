@@ -1,3 +1,16 @@
+# TAG: INFRASTRUCTURE-DEPLOY-P2-DK
+# PURPOSE: Local development environment with API + PostgreSQL
+# SCOPE: Development & testing (use Ansible for production)
+# SAFETY: Not for production - use hardened setup
+
+# Docker Compose Configuration
+# - Service 1: API (FastAPI) on port 8000
+# - Service 2: Database (PostgreSQL) on port 5432
+# 
+# Usage:
+#   docker compose up --build -d
+#   curl http://localhost:8000/health
+#   docker compose down
 services:
   api:
     build: .
