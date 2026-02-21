@@ -1,7 +1,31 @@
+# TAG: INFRASTRUCTURE-CONFIG-P2-AZ
+# PURPOSE: Deploy FastAPI application to EC2
+# SCOPE: Production deployment
+# SAFETY: Idempotent - updates running containers
+
+# Deploy FastAPI Application Playbook
+#
+# Tasks:
+#   1. Clone or update application code
+#   2. Pull Docker image
+#   3. Stop existing container (if any)
+#   4. Run new container with docker-compose
+#   5. Verify health endpoint
+#
+# Requirements:
+#   - Docker installed on target
+#   - Git configured
+#   - Network access to Docker registry
+#
+# Usage:
+#   ansible-playbook -i inventories/staging/hosts.yml playbooks/deploy_api.yml
+#
+# Verification:
+#   curl http://35.180.54.218:8000/health
 ---
 - name: Deploy Secure Release Platform API to EC2
   hosts: staging
-  become: yes
+  become: true
   vars:
     app_dir: /opt/secure-release-platform
   
@@ -29,7 +53,7 @@
           -e "ssh -i ~/.ssh/lab-devops-key.pem -o StrictHostKeyChecking=no" \
           {{ playbook_dir }}/../../ ubuntu@{{ ansible_host }}:{{ app_dir }}/
       delegate_to: localhost
-      become: no
+      become: false
 
     - name: Set proper ownership
       file:
@@ -43,7 +67,7 @@
       args:
         chdir: "{{ app_dir }}"
       become_user: ubuntu
-      ignore_errors: yes
+      ignore_errors: true
 
     - name: Start application with Docker Compose
       shell: docker compose up --build -d
