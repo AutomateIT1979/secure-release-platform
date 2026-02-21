@@ -1,7 +1,29 @@
+# TAG: INFRASTRUCTURE-CONFIG-P2-AZ
+# PURPOSE: Install and configure Jenkins on EC2
+# SCOPE: CI/CD server setup
+# SAFETY: Idempotent - safe to run multiple times
+
+# Install Jenkins Playbook
+#
+# Tasks:
+#   1. Install Java 17 (Jenkins requirement)
+#   2. Add Jenkins repository
+#   3. Install Jenkins
+#   4. Start Jenkins service
+#   5. Configure firewall (port 8080)
+#
+# Version: Jenkins 2.541.1
+# Java: OpenJDK 17
+#
+# Usage:
+#   ansible-playbook -i inventories/staging/hosts.yml playbooks/install_jenkins.yml
+#
+# Access:
+#   http://35.180.54.218:8080/
 ---
 - name: Install Jenkins on EC2
   hosts: staging
-  become: yes
+  become: true
   
   tasks:
     - name: Update apt cache
