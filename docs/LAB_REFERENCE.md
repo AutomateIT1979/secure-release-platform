@@ -844,3 +844,93 @@ Cycle continu de scanning...
 
 **Temps de cycle** : ~45 minutes (détection → résolution → vérification)
 
+
+## POLICY GATE - Build #10 (2026-02-22) ✅
+
+### Objectif
+
+Démontrer la différence entre **visibilité** (warnings) et **enforcement** (blocage) dans un pipeline DevSecOps.
+
+---
+
+### Configuration Policy Gate
+
+**Modification Jenkinsfile** :
+```diff
+- --exit-code 0  # Warnings only (mode développement)
++ --exit-code 1  # Blocage si HIGH/CRITICAL (mode production)
+```
+
+**Stage renommé** : `Security Scan - Docker Image [POLICY GATE]`
+
+**Messages ajoutés** :
+- "⚠️ POLICY GATE ACTIVÉ : Le build échouera si HIGH/CRITICAL détectées"
+- Error handler: `error("❌ POLICY GATE FAILURE...")`
+
+---
+
+### Résultats Build #10
+
+**Status** : FAILURE ❌ *(succès attendu)*  
+**Commit** : `283f3ba`
+
+**Vulnérabilités détectées** : 5 HIGH (identiques au build #9)
+- Debian : 2 HIGH (glibc)
+- Python : 3 HIGH (jaraco.context, starlette, wheel)
+
+**Comportement** :
+1. ✅ Checkout, Gitleaks, Build : Réussis
+2. ❌ **Policy Gate : ÉCHOUÉ - Build bloqué**
+3. ⏭️ Deploy et Smoke Test : **Sautés** (code vulnérable non déployé)
+
+**Message d'erreur** :
+```
+ERROR: ❌ POLICY GATE FAILURE: Vulnérabilités HIGH/CRITICAL détectées - Build bloqué
+Finished: FAILURE
+```
+
+---
+
+### Comparaison Modes
+
+| Mode | Build #9 | Build #10 |
+|------|----------|-----------|
+| **Type** | Warnings Only | Policy Gate |
+| **Vulnérabilités** | 5 HIGH | 5 HIGH |
+| **Status** | SUCCESS | **FAILURE** |
+| **Deploy** | ✅ Exécuté | ❌ **Bloqué** |
+| **Usage** | Développement | **Production** |
+
+**Enseignement** : Les mêmes vulnérabilités, deux comportements différents selon le niveau de maturité DevSecOps.
+
+---
+
+### Cas d'usage
+
+**Warnings Only (Build #9)** :
+- ✅ Développement actif
+- ✅ Feature branches
+- ✅ Visibilité continue sans blocage
+- ✅ Itérations rapides
+
+**Policy Gate (Build #10)** :
+- ✅ Branches de production (main, release)
+- ✅ Conformité sécurité stricte
+- ✅ Prévention de déploiements vulnérables
+- ✅ Audit et traçabilité
+
+---
+
+### Métriques Portfolio
+
+| Métrique | Valeur |
+|----------|--------|
+| Builds total | 10 (#1-10) |
+| DevSecOps builds | 4 (#7-10) |
+| Vulnérabilités initiales | 6 HIGH |
+| Vulnérabilités finales | 5 HIGH |
+| Déploiements bloqués | 1 (build #10) |
+| Modes démontrés | 2 (warnings + enforcement) |
+
+**Démontre** : Maturité DevSecOps avec stratégies de sécurité adaptables.
+
