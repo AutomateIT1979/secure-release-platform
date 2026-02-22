@@ -703,3 +703,144 @@ Checkout → Secrets Scan → Build → Image Scan → Deploy → Test
 - Pipeline fonctionnel avec visibilité sécurité
 
 **Preuve** : Build #7 SUCCESS
+
+## CYCLE DevSecOps COMPLET - Builds #7, #8, #9 (2026-02-22) ✅
+
+### Contexte
+
+Pipeline Jenkins avec scans sécurité automatiques intégrés :
+- **Gitleaks** : Détection de secrets dans le code
+- **Trivy** : Scan de vulnérabilités dans les images Docker
+
+**Objectif** : Démontrer un cycle DevSecOps réaliste incluant détection, correction et vérification.
+
+---
+
+### Build #7 : Détection Initiale (SUCCESS)
+
+**Date** : 2026-02-22  
+**Commit** : `033133f` (DevSecOps scans ajoutés)  
+**Résultat** : SUCCESS ✅
+
+**Vulnérabilités détectées** :
+- **Debian** : 2 HIGH (glibc CVE-2026-0861)
+- **Python** : 4 HIGH
+  1. jaraco.context 5.3.0 → 6.1.0 (CVE-2026-23949)
+  2. starlette 0.36.3 → 0.40.0 (CVE-2024-47874)
+  3. wheel 0.45.1 → 0.46.2 (CVE-2026-24049) - 2 occurrences
+
+**Total** : 6 HIGH, 0 CRITICAL
+
+**Conclusion** : Pipeline fonctionne, visibilité complète sur vulnérabilités.
+
+---
+
+### Build #8 : Tentative de Correction (FAILURE)
+
+**Date** : 2026-02-22  
+**Commit** : `116bd9d` (Patches sécurité appliqués)  
+**Résultat** : FAILURE ❌
+
+**Patches appliqués** :
+```
+starlette==0.40.0  # CVE-2024-47874
+wheel==0.46.2      # CVE-2026-24049
+setuptools>=70.0.0 # CVE-2026-23949
+```
+
+**Erreur rencontrée** :
+```
+ERROR: Cannot install starlette==0.40.0
+fastapi 0.110.0 depends on starlette<0.37.0 and >=0.36.3
+```
+
+**Cause** : Conflit de dépendances
+- FastAPI 0.110.0 incompatible avec starlette 0.40.0
+- Patch de sécurité bloqué par contrainte de version
+
+**Leçon** : Démontre un défi DevSecOps réel - balance entre sécurité et compatibilité.
+
+---
+
+### Build #9 : Correction et Vérification (SUCCESS)
+
+**Date** : 2026-02-22  
+**Commit** : `a62f98c` (Upgrade FastAPI)  
+**Résultat** : SUCCESS ✅
+
+**Correction appliquée** :
+```
+fastapi==0.115.6  # Compatible avec starlette 0.40+
+```
+
+**Vulnérabilités détectées après correction** :
+- **Debian** : 2 HIGH (glibc CVE-2026-0861) - inchangé
+- **Python** : 3 HIGH
+  1. jaraco.context 5.3.0 (CVE-2026-23949) - vendored dans setuptools
+  2. starlette 0.40.0 (CVE-2025-62727) - **NOUVELLE CVE**
+  3. wheel 0.45.1 (CVE-2026-24049) - vendored dans setuptools
+
+**Total** : 5 HIGH, 0 CRITICAL
+
+**Réduction** : 6 → 5 HIGH (-16%) ✅
+
+**Observations importantes** :
+1. ✅ **starlette 0.36.3 → 0.40.0** : CVE-2024-47874 corrigée
+2. ⚠️ **Nouvelle CVE apparue** : starlette 0.40.0 a CVE-2025-62727 (nécessite 0.49.1)
+3. ⚠️ **wheel et jaraco.context** : Restent vulnérables car versions vendored dans setuptools
+
+---
+
+### Analyse du Cycle DevSecOps
+
+**Cycle complet démontré** :
+```
+BUILD #7 (Détection)
+    ↓
+    6 HIGH vulnérabilités détectées
+    ↓
+BUILD #8 (Tentative correction)
+    ↓
+    Échec - conflit dépendances
+    ↓
+BUILD #9 (Correction réussie)
+    ↓
+    5 HIGH vulnérabilités (1 corrigée, 1 nouvelle)
+    ↓
+Cycle continu de scanning...
+```
+
+**Points clés pour portfolio** :
+
+✅ **Détection automatique** : Trivy intégré au pipeline  
+✅ **Traçabilité** : CVE précises, versions affectées, patches disponibles  
+✅ **Résolution de problèmes** : Conflit dépendances résolu (FastAPI upgrade)  
+✅ **Réalisme** : Nouvelles CVE apparaissent, dépendances transitives  
+✅ **Amélioration continue** : Réduction de 6 → 5 vulnérabilités  
+
+---
+
+### Limitations Actuelles
+
+**Mode "warnings only"** :
+- Pipeline ne bloque PAS même avec HIGH vulnerabilities
+- Approche MVP : visibilité sans blocage
+- Adapté pour développement itératif
+
+**Prochaine évolution** : Policy Gate (bloquer si CRITICAL/HIGH détectées)
+
+---
+
+### Métriques
+
+| Métrique | Valeur |
+|----------|--------|
+| Builds exécutés | 3 (#7, #8, #9) |
+| Vulnérabilités initiales | 6 HIGH |
+| Vulnérabilités finales | 5 HIGH |
+| Taux de réduction | 16% |
+| Patches appliqués | 3 (starlette, wheel, setuptools) |
+| Conflits résolus | 1 (FastAPI upgrade) |
+
+**Temps de cycle** : ~45 minutes (détection → résolution → vérification)
+
