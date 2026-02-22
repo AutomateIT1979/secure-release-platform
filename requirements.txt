@@ -16,3 +16,4 @@ httpx==0.26.0
 # Security patches
 wheel==0.46.2  # Security patch: CVE-2026-24049 (Privilege escalation)
 setuptools>=70.0.0  # Includes jaraco.context 6.1.0+ (CVE-2026-23949 fix)
+prometheus-fastapi-instrumentator==7.0.0  # Metrics instrumentation

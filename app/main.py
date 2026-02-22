@@ -1,87 +1,75 @@
-# TAG: AUTOMATION-BATCH-P1-PY
-# PURPOSE: FastAPI REST API for Secure Release Platform
-# SCOPE: Backend application server
-# SAFETY: Input validation on all endpoints, rate limiting recommended
+# TAG: AUTOMATION-APPLICATION-API
+# PURPOSE: FastAPI application with CRUD operations and observability
+# SCOPE: REST API for project management with Prometheus metrics
+# SAFETY: Health checks, database connection handling, metrics exposition
 
-"""
-Secure Release Platform - REST API
-
-Framework: FastAPI 0.104.1
-Python: 3.12+
-Database: PostgreSQL (via SQLAlchemy)
-Port: 8000
-
-Endpoints:
-  GET  /health              → {"status":"ok"}
-  GET  /version             → {"version":"1.0"}
-  GET  /projects            → List all projects
-  GET  /projects/{id}       → Get single project  
-  POST /projects            → Create new project
-
-Tests: pytest (7 passing)
-Docs: http://localhost:8000/docs (Swagger UI)
-
-Author: DevOps Developer
-Created: 2026-02-08
-Updated: 2026-02-17
-"""
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Response
 from sqlalchemy.orm import Session
 from typing import List
-from pydantic import BaseModel
 
-from app.database import engine, get_db, Base
-from app.models import Project as ProjectModel
+from app.database import SessionLocal, engine
+from app.models import Base, Project
 
-# Créer les tables au démarrage
+# Prometheus instrumentation
+from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
+# Create database tables
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Secure Release Platform")
+# Initialize FastAPI app
+app = FastAPI(
+    title="Secure Release Platform API",
+    description="API for managing software releases with DevSecOps practices",
+    version="1.0.0"
+)
 
-# Schémas Pydantic pour validation
-class ProjectCreate(BaseModel):
-    name: str
-    status: str = "planned"
+# Initialize and instrument Prometheus
+Instrumentator().instrument(app)
 
-class ProjectResponse(BaseModel):
-    id: int
-    name: str
-    status: str
-    
-    class Config:
-        from_attributes = True
+# Manual metrics endpoint (instead of .expose())
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint"""
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+# Dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @app.get("/health")
 def health():
+    """Health check endpoint"""
     return {"status": "ok"}
 
 @app.get("/version")
 def version():
-    return {
-        "version": "1.0.0",
-        "commit": "9d1d7c3",
-        "build_date": "2026-02-08"
-    }
+    """Version endpoint"""
+    return {"version": "1.0.0", "name": "Secure Release Platform"}
 
-@app.get("/projects", response_model=List[ProjectResponse])
-def list_projects(db: Session = Depends(get_db)):
-    """Retourne la liste des projets depuis la base de données"""
-    projects = db.query(ProjectModel).all()
-    return projects
+@app.get("/projects", response_model=List[dict])
+def get_projects(db: Session = Depends(get_db)):
+    """Get all projects"""
+    projects = db.query(Project).all()
+    return [{"id": p.id, "name": p.name, "description": p.description} for p in projects]
 
-@app.post("/projects", response_model=ProjectResponse, status_code=201)
-def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
-    """Crée un nouveau projet dans la base de données"""
-    db_project = ProjectModel(name=project.name, status=project.status)
-    db.add(db_project)
+@app.post("/projects", response_model=dict, status_code=201)
+def create_project(name: str, description: str = "", db: Session = Depends(get_db)):
+    """Create a new project"""
+    project = Project(name=name, description=description)
+    db.add(project)
     db.commit()
-    db.refresh(db_project)
-    return db_project
+    db.refresh(project)
+    return {"id": project.id, "name": project.name, "description": project.description}
 
-@app.get("/projects/{project_id}", response_model=ProjectResponse)
+@app.get("/projects/{project_id}", response_model=dict)
 def get_project(project_id: int, db: Session = Depends(get_db)):
-    """Récupère un projet par son ID"""
-    project = db.query(ProjectModel).filter(ProjectModel.id == project_id).first()
-    if project is None:
+    """Get a specific project by ID"""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    return project
+    return {"id": project.id, "name": project.name, "description": project.description}
