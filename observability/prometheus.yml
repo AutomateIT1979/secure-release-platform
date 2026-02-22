@@ -1,0 +1,29 @@
+# Prometheus Configuration for Secure Release Platform
+# Scrapes metrics from FastAPI application
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'secure-release-platform'
+    environment: 'production'
+
+# Scrape configurations
+scrape_configs:
+  # FastAPI application metrics
+  - job_name: 'fastapi'
+    static_configs:
+      - targets: ['api:8000']
+        labels:
+          service: 'secure-release-platform-api'
+          component: 'backend'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+          component: 'monitoring'
