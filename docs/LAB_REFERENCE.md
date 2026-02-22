@@ -174,7 +174,7 @@ ansible-playbook -i ansible/inventories/staging/hosts.yml \
 
 - **ID** : `i-01c77636889cc7f4a`
 - **Nom** : `lab-devops-ec2`
-- **IP publique** : `35.180.54.218` (peut avoir changé)
+- **IP publique** : `35.180.38.208` (peut avoir changé)
 - **IP privée** : `172.31.7.253`
 - **Région** : `eu-west-3` (Paris)
 - **OS** : Ubuntu 22.04.5 LTS
@@ -201,7 +201,7 @@ ansible-playbook -i ansible/inventories/staging/hosts.yml \
 ### 5.4 Connexion SSH
 **Commande** :
 ```bash
-ssh -i ~/.ssh/lab-devops-key.pem ubuntu@35.180.54.218
+ssh -i ~/.ssh/lab-devops-key.pem ubuntu@35.180.38.208
 ```
 
 **⚠️ PROBLÈME CONNU** : L'IP publique locale change régulièrement, nécessite mise à jour du Security Group.
@@ -558,7 +558,7 @@ git commit -m "docs: update LAB_REFERENCE.md - audit 2026-02-20"
 **Durée** : ~5 minutes
 
 **Résultats** :
-- ✅ API déployée sur EC2 (35.180.54.218:8000)
+- ✅ API déployée sur EC2 (35.180.38.208:8000)
 - ✅ Docker Compose opérationnel
 - ✅ PostgreSQL actif
 - ✅ Health check : {"status":"ok"}
@@ -566,9 +566,47 @@ git commit -m "docs: update LAB_REFERENCE.md - audit 2026-02-20"
 
 **Commandes de vérification** :
 ```bash
-curl http://35.180.54.218:8000/health
-curl http://35.180.54.218:8000/version
-curl http://35.180.54.218:8000/projects
+curl http://35.180.38.208:8000/health
+curl http://35.180.38.208:8000/version
+curl http://35.180.38.208:8000/projects
 ```
 
 **État final** : Jalon 3 complètement validé
+
+## MISE À JOUR CRITIQUE - 2026-02-22 (EC2 Upgrade)
+
+### Upgrade Instance EC2 - t3.small → t3.small ✅
+
+**Raison** : Instance t3.small (1 GB RAM) insuffisante pour API + PostgreSQL + Jenkins  
+**Action** : Upgrade vers t3.small (2 GB RAM)  
+**Date** : 2026-02-22  
+**Coût** : $0 (Crédits AWS : $110.14 restants = 7 mois gratuits)
+
+**Avant** :
+- Type : t3.small
+- RAM : 914 MB (575 MB utilisé, 74 MB libre)
+- Load : 1.77 (88% charge)
+- Symptômes : Jenkins UI freeze, threads bloqués
+
+**Après** :
+- Type : t3.small
+- RAM : 1.9 GB (599 MB utilisé, 716 MB libre)
+- Load : 0.05 (stable)
+- État : Opérationnel
+
+**Commandes exécutées** :
+```bash
+aws ec2 stop-instances --instance-ids i-01c77636889cc7f4a --region eu-west-3
+aws ec2 modify-instance-attribute --instance-id i-01c77636889cc7f4a --instance-type t3.small --region eu-west-3
+aws ec2 start-instances --instance-ids i-01c77636889cc7f4a --region eu-west-3
+```
+
+**⚠️ CHANGEMENT IP PUBLIQUE** :
+- Ancienne IP : `35.180.38.208`
+- **Nouvelle IP** : `35.180.38.208` ← UTILISER CELLE-CI
+
+**Impact** :
+- ✅ Security Group mis à jour automatiquement (script)
+- ✅ Jenkins accessible : http://35.180.38.208:8080
+- ⏳ API à redémarrer : http://35.180.38.208:8000
+
