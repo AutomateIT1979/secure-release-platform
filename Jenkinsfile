@@ -1,7 +1,7 @@
 // TAG: AUTOMATION-DEPLOY-P1-JENKINS
-// PURPOSE: CI/CD pipeline with security scans (DevSecOps)
+// PURPOSE: CI/CD pipeline with security scans (DevSecOps) + POLICY GATE
 // SCOPE: Docker build, security scanning, automated deployment
-// SAFETY: Trivy + Gitleaks integrated
+// SAFETY: Trivy + Gitleaks integrated with strict enforcement
 
 pipeline {
     agent any
@@ -51,24 +51,25 @@ pipeline {
             }
         }
         
-        stage('Security Scan - Docker Image') {
+        stage('Security Scan - Docker Image [POLICY GATE]') {
             steps {
-                echo "🔍 Scan de vulnérabilités (Trivy)"
+                echo "🔍 Scan de vulnérabilités (Trivy) - MODE STRICT"
+                echo "⚠️ POLICY GATE ACTIVÉ : Le build échouera si HIGH/CRITICAL détectées"
                 script {
                     def exitCode = sh(
                         script: """
                             docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
                                 aquasec/trivy:latest image \
                                 --severity HIGH,CRITICAL \
-                                --exit-code 0 \
+                                --exit-code 1 \
                                 ${DOCKER_IMAGE}:latest
                         """,
                         returnStatus: true
                     )
                     if (exitCode != 0) {
-                        echo "⚠️ Vulnérabilités HIGH/CRITICAL détectées (build continue)"
+                        error("❌ POLICY GATE FAILURE: Vulnérabilités HIGH/CRITICAL détectées - Build bloqué")
                     } else {
-                        echo "✅ Aucune vulnérabilité critique"
+                        echo "✅ Aucune vulnérabilité critique - Policy Gate passé"
                     }
                 }
             }
@@ -104,9 +105,12 @@ pipeline {
             echo "📊 Health: http://${EC2_IP}:8000/health"
             echo "📦 Image: ${DOCKER_IMAGE}:${BUILD_NUMBER}"
             echo "🔒 Scans sécurité exécutés (Trivy + Gitleaks)"
+            echo "✅ Policy Gate: PASSED - Aucune vulnérabilité bloquante"
         }
         failure {
-            echo "❌ Pipeline échoué ! Vérifiez les logs."
+            echo "❌ Pipeline échoué !"
+            echo "🔒 Vérifiez les vulnérabilités détectées par Trivy"
+            echo "📋 Consultez le rapport de scan ci-dessus"
         }
         always {
             echo "🧹 Nettoyage terminé"
