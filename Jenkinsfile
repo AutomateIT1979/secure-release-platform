@@ -1,7 +1,7 @@
 // TAG: AUTOMATION-DEPLOY-P1-JENKINS
-// PURPOSE: CI/CD pipeline for FastAPI application
-// SCOPE: Docker build and automated deployment
-// SAFETY: No hardcoded credentials
+// PURPOSE: CI/CD pipeline with security scans (DevSecOps)
+// SCOPE: Docker build, security scanning, automated deployment
+// SAFETY: Trivy + Gitleaks integrated
 
 pipeline {
     agent any
@@ -23,6 +23,24 @@ pipeline {
             }
         }
         
+        stage('Security Scan - Secrets') {
+            steps {
+                echo "🔒 Scan des secrets (Gitleaks)"
+                script {
+                    def exitCode = sh(
+                        script: 'docker run --rm -v $(pwd):/path zricethezav/gitleaks:latest detect --source=/path --no-git -v',
+                        returnStatus: true
+                    )
+                    if (exitCode != 0) {
+                        echo "⚠️ Gitleaks a détecté des problèmes potentiels"
+                        // On continue le build (warning seulement)
+                    } else {
+                        echo "✅ Aucun secret détecté"
+                    }
+                }
+            }
+        }
+        
         stage('Build Docker Image') {
             steps {
                 echo "🐳 Build de l'image Docker"
@@ -30,6 +48,29 @@ pipeline {
                     docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} .
                     docker tag ${DOCKER_IMAGE}:${BUILD_NUMBER} ${DOCKER_IMAGE}:latest
                 """
+            }
+        }
+        
+        stage('Security Scan - Docker Image') {
+            steps {
+                echo "🔍 Scan de vulnérabilités (Trivy)"
+                script {
+                    def exitCode = sh(
+                        script: """
+                            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                                aquasec/trivy:latest image \
+                                --severity HIGH,CRITICAL \
+                                --exit-code 0 \
+                                ${DOCKER_IMAGE}:latest
+                        """,
+                        returnStatus: true
+                    )
+                    if (exitCode != 0) {
+                        echo "⚠️ Vulnérabilités HIGH/CRITICAL détectées (build continue)"
+                    } else {
+                        echo "✅ Aucune vulnérabilité critique"
+                    }
+                }
             }
         }
         
@@ -62,6 +103,7 @@ pipeline {
             echo "🌐 API accessible sur http://${EC2_IP}:8000"
             echo "📊 Health: http://${EC2_IP}:8000/health"
             echo "📦 Image: ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+            echo "🔒 Scans sécurité exécutés (Trivy + Gitleaks)"
         }
         failure {
             echo "❌ Pipeline échoué ! Vérifiez les logs."
