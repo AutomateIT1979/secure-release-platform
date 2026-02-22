@@ -1,0 +1,5 @@
+# Example Terraform variables file
+# Copy to terraform.tfvars and fill with your values
+
+key_name    = "lab-devops-key"
+my_ip_cidr  = "YOUR_IP_HERE/32"  # Get with: curl -s ifconfig.me
