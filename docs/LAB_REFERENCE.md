@@ -671,3 +671,35 @@ Checkout → Secrets Scan → Build → Image Scan → Deploy → Test
 - Pipeline fonctionnel avec visibilité sécurité
 
 **Preuve** : Build #7 SUCCESS
+
+## MISE À JOUR CRITIQUE - 2026-02-22 (Jalon 5a COMPLÉTÉ) ✅
+
+### DevSecOps - Security Scans - SUCCÈS
+
+**Date** : 2026-02-22  
+**Build** : #7  
+**Status** : SUCCESS ✅
+
+**Scans Intégrés** :
+1. ✅ Gitleaks - Détection secrets (0 trouvé)
+2. ✅ Trivy - Scan vulnérabilités Docker (6 HIGH détectées)
+
+**Vulnérabilités Détectées** :
+- Debian : 2 HIGH (glibc CVE-2026-0861)
+- Python : 4 HIGH (jaraco.context, starlette, wheel)
+- Total : 6 HIGH, 0 CRITICAL
+
+**Pipeline Flow** :
+Checkout → Secrets Scan → Build → Image Scan → Deploy → Test
+
+**Résultat** : Pipeline DevSecOps fonctionnel avec visibilité complète
+
+**Jalon 5a : DevSecOps MVP COMPLÉTÉ** 🎯
+
+### Jalon 5a — DevSecOps Scans (✅ COMPLÉTÉ)
+- Gitleaks intégré au pipeline
+- Trivy intégré au pipeline
+- 6 vulnérabilités HIGH détectées
+- Pipeline fonctionnel avec visibilité sécurité
+
+**Preuve** : Build #7 SUCCESS
