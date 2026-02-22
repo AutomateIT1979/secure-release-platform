@@ -254,7 +254,7 @@ cd ~/lab-devops/secure-release-platform
 
 **Preuve** : Commits `809d288`, `41b0029`
 
-### Jalon 3 — Déploiement API sur EC2 (✅ COMPLÉTÉ)
+### Jalon 3 — Déploiement API sur EC2 (✅ COMPLÉTÉ ET VALIDÉ)
 - API + PostgreSQL déployés sur EC2
 - Playbook `deploy_api.yml` créé
 
@@ -548,3 +548,27 @@ git commit -m "docs: update LAB_REFERENCE.md - audit 2026-02-20"
 **Dernière modification** : 2026-02-20 par administrator
 **Version** : 1.1
 **Hash** : À calculer après commit
+
+## MISE À JOUR - 2026-02-22 (Jalon 3 VALIDÉ)
+
+### Déploiement API Production - SUCCÈS ✅
+
+**Playbook** : `ansible/playbooks/deploy_api.yml`  
+**Date** : 2026-02-22  
+**Durée** : ~5 minutes
+
+**Résultats** :
+- ✅ API déployée sur EC2 (35.180.54.218:8000)
+- ✅ Docker Compose opérationnel
+- ✅ PostgreSQL actif
+- ✅ Health check : {"status":"ok"}
+- ✅ Accessible publiquement
+
+**Commandes de vérification** :
+```bash
+curl http://35.180.54.218:8000/health
+curl http://35.180.54.218:8000/version
+curl http://35.180.54.218:8000/projects
+```
+
+**État final** : Jalon 3 complètement validé
