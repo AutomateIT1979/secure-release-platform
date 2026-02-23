@@ -25,46 +25,59 @@
 ---
 
 ## 🏗️ Architecture Overview
-```
-┌─────────────────────────────────────────────────────────────┐
-│  EC2 Instance #1 (t3.small - Production)                   │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Jenkins CI/CD Pipeline (6 stages)                   │  │
-│  │  ├─ Checkout                                          │  │
-│  │  ├─ Security: Secrets Scan (Gitleaks)               │  │
-│  │  ├─ Build: Docker Image                              │  │
-│  │  ├─ Security: Container Scan (Trivy)                │  │
-│  │  ├─ Deploy to Production                             │  │
-│  │  └─ Smoke Test                                        │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  FastAPI Application + PostgreSQL                    │  │
-│  │  • REST API with CRUD operations                     │  │
-│  │  • Prometheus metrics instrumentation               │  │
-│  │  • Health checks & versioning                        │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Observability Stack                                  │  │
-│  │  • Prometheus: Metrics collection (10s scrape)       │  │
-│  │  • Grafana: 2 dashboards (HTTP + Runtime)           │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph EC2_1["🖥️ EC2 Instance #1 (t3.small - Production)"]
+        subgraph Jenkins["⚙️ Jenkins CI/CD Pipeline (6 stages)"]
+            J1[1. Checkout]
+            J2[2. Security: Secrets Scan - Gitleaks]
+            J3[3. Build: Docker Image]
+            J4[4. Security: Container Scan - Trivy]
+            J5[5. Deploy to Production]
+            J6[6. Smoke Test]
+            J1 --> J2 --> J3 --> J4 --> J5 --> J6
+        end
+        
+        subgraph API["🚀 FastAPI Application + PostgreSQL"]
+            API1[REST API - CRUD operations]
+            API2[Prometheus metrics instrumentation]
+            API3[Health checks & versioning]
+        end
+        
+        subgraph OBS["📊 Observability Stack"]
+            PROM[Prometheus: Metrics collection - 10s scrape]
+            GRAF[Grafana: 2 dashboards - HTTP + Runtime]
+        end
+    end
+    
+    subgraph EC2_2["🖥️ EC2 Instance #2 (t3.micro - Security Scanning)"]
+        TERRA[Deployed via Terraform - Infrastructure as Code]
+        subgraph SEC["🔒 Security Scanning Services"]
+            TRIVY[Trivy: Container vulnerability scanning]
+            GITLEAKS[Gitleaks: Secret detection]
+        end
+    end
+    
+    Jenkins -.->|triggers| API
+    API -->|exposes| PROM
+    PROM -->|data source| GRAF
+    Jenkins -->|scans on| SEC
 
-┌─────────────────────────────────────────────────────────────┐
-│  EC2 Instance #2 (t3.micro - Security Scanning)            │
-│  Deployed via Terraform (Infrastructure as Code)            │
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Security Scanning Services                           │  │
-│  │  • Trivy: Container image vulnerability scanning     │  │
-│  │  • Gitleaks: Secret detection                        │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+    style EC2_1 fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style EC2_2 fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style Jenkins fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style API fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    style OBS fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    style SEC fill:#ffebee,stroke:#c62828,stroke-width:2px
 ```
+
+**Infrastructure Details:**
+- **EC2 #1**: Jenkins + FastAPI + PostgreSQL + Prometheus + Grafana
+- **EC2 #2**: Trivy + Gitleaks (Terraform-managed)
+- **Communication**: Private IPs within VPC, public IPs for external access
 
 ---
+
 
 ## ✨ Key Features
 
