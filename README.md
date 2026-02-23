@@ -25,56 +25,53 @@
 ---
 
 ## 🏗️ Architecture Overview
-```mermaid
-graph TB
-    subgraph EC2_1["🖥️ EC2 Instance #1 (t3.small - Production)"]
-        subgraph Jenkins["⚙️ Jenkins CI/CD Pipeline (6 stages)"]
-            J1[1. Checkout]
-            J2[2. Security: Secrets Scan - Gitleaks]
-            J3[3. Build: Docker Image]
-            J4[4. Security: Container Scan - Trivy]
-            J5[5. Deploy to Production]
-            J6[6. Smoke Test]
-            J1 --> J2 --> J3 --> J4 --> J5 --> J6
-        end
-        
-        subgraph API["🚀 FastAPI Application + PostgreSQL"]
-            API1[REST API - CRUD operations]
-            API2[Prometheus metrics instrumentation]
-            API3[Health checks & versioning]
-        end
-        
-        subgraph OBS["📊 Observability Stack"]
-            PROM[Prometheus: Metrics collection - 10s scrape]
-            GRAF[Grafana: 2 dashboards - HTTP + Runtime]
-        end
-    end
-    
-    subgraph EC2_2["🖥️ EC2 Instance #2 (t3.micro - Security Scanning)"]
-        TERRA[Deployed via Terraform - Infrastructure as Code]
-        subgraph SEC["🔒 Security Scanning Services"]
-            TRIVY[Trivy: Container vulnerability scanning]
-            GITLEAKS[Gitleaks: Secret detection]
-        end
-    end
-    
-    Jenkins -.->|triggers| API
-    API -->|exposes| PROM
-    PROM -->|data source| GRAF
-    Jenkins -->|scans on| SEC
 
-    style EC2_1 fill:#e1f5ff,stroke:#01579b,stroke-width:2px
-    style EC2_2 fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style Jenkins fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-    style API fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
-    style OBS fill:#fff9c4,stroke:#f57f17,stroke-width:2px
-    style SEC fill:#ffebee,stroke:#c62828,stroke-width:2px
+### 🖥️ **EC2 Instance #1** (t3.small - Production)
+
+#### ⚙️ Jenkins CI/CD Pipeline (6 Stages)
+```
+1. Checkout → 2. Security: Secrets Scan (Gitleaks) → 3. Build: Docker Image 
+   ↓
+4. Security: Container Scan (Trivy) → 5. Deploy to Production → 6. Smoke Test
 ```
 
-**Infrastructure Details:**
-- **EC2 #1**: Jenkins + FastAPI + PostgreSQL + Prometheus + Grafana
-- **EC2 #2**: Trivy + Gitleaks (Terraform-managed)
-- **Communication**: Private IPs within VPC, public IPs for external access
+#### 🚀 FastAPI Application Stack
+- **API**: REST endpoints with CRUD operations
+- **Database**: PostgreSQL 15
+- **Metrics**: Prometheus instrumentation on `/metrics`
+- **Health**: `/health` and `/version` endpoints
+
+#### 📊 Observability Stack
+- **Prometheus**: Metrics collection (10s scrape interval)
+- **Grafana**: 2 production dashboards
+  - HTTP Metrics Dashboard (requests, status codes, latency)
+  - Python Runtime Dashboard (memory, CPU, garbage collection)
+
+---
+
+### 🖥️ **EC2 Instance #2** (t3.micro - Security Scanning)
+
+Deployed and managed via **Terraform** (Infrastructure as Code)
+
+#### 🔒 Security Scanning Services
+- **Trivy**: Container image vulnerability scanning
+- **Gitleaks**: Secret detection and credential scanning
+
+---
+
+### 🔄 Service Communication
+
+| From | To | Type | Purpose |
+|------|-----|------|---------|
+| Jenkins | FastAPI | HTTP | Deploy & smoke test |
+| FastAPI | Prometheus | HTTP | Expose `/metrics` endpoint |
+| Prometheus | Grafana | Query | Data source for dashboards |
+| Jenkins | EC2 #2 | SSH | Execute security scans |
+
+### 📍 Network Configuration
+- **Private IPs**: Internal VPC communication (172.31.x.x)
+- **Public IPs**: External access (Jenkins, Grafana, API)
+- **Security Groups**: Restricted access (SSH, HTTP, custom ports)
 
 ---
 
