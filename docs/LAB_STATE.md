@@ -17,7 +17,7 @@ Ce document trace l'état **factuel** du laboratoire DevSecOps pour le projet "S
 ### 2.1 Système
 - **OS** : Ubuntu 24.04 (WSL sous Windows 11)
 - **Utilisateur** : `administrator`
-- **Chemin projet** : `/home/administrator/lab-devops/secure-release-platform`
+- **Chemin projet** : `/home/YOUR_USERNAME/lab-devops/secure-release-platform`
 
 ### 2.2 Outils installés
 
@@ -95,10 +95,10 @@ secure-release-platform/
 
 | Paramètre | Valeur |
 |-----------|--------|
-| **ID** | i-01c77636889cc7f4a |
+| **ID** | i-XXXXXXXXXXXXX1 |
 | **Nom** | lab-devops-ec2 |
-| **IP Publique** | 35.180.38.208 |
-| **IP Privée** | 172.31.7.253 |
+| **IP Publique** | YOUR_EC2_PUBLIC_IP_1 |
+| **IP Privée** | 172.31.X.X |
 | **Type** | t3.small (2GB RAM, 2 vCPU) |
 | **OS** | Ubuntu 22.04.5 LTS |
 | **Uptime** | Stable depuis upgrade (2026-02-22) |
@@ -112,7 +112,7 @@ secure-release-platform/
 - ✅ Prometheus (port 9090) : Scraping /metrics every 10s
 - ✅ Grafana (port 3000) : v12.3.3, admin ready
 
-**Security Group** : sg-0db21b6219faa2fca
+**Security Group** : sg-XXXXXXXXXXXXXXXXX1
 - Port 22 (SSH) : 146.70.148.54/32
 - Port 80 (HTTP) : 146.70.148.54/32
 - Port 8000 (API) : 0.0.0.0/0 (public)
@@ -120,7 +120,7 @@ secure-release-platform/
 - Port 9090 (Prometheus) : 146.70.148.54/32
 - Port 3000 (Grafana) : 146.70.148.54/32
 
-**SSH** : `ssh -i ~/.ssh/lab-devops-key.pem ubuntu@35.180.38.208`
+**SSH** : `ssh -i ~/.ssh/lab-devops-key.pem ubuntu@YOUR_EC2_PUBLIC_IP_1`
 
 ---
 
@@ -128,10 +128,10 @@ secure-release-platform/
 
 | Paramètre | Valeur |
 |-----------|--------|
-| **ID** | i-0895fb26e33d874d8 |
+| **ID** | i-XXXXXXXXXXXXX2 |
 | **Nom** | lab-devops-scans-ec2 |
-| **IP Publique** | 15.188.127.106 |
-| **IP Privée** | 172.31.12.54 |
+| **IP Publique** | YOUR_EC2_PUBLIC_IP_2 |
+| **IP Privée** | 172.31.Y.Y |
 | **Type** | t3.micro (1GB RAM, 2 vCPU) |
 | **OS** | Ubuntu 22.04 LTS |
 | **Managed By** | Terraform ✨ |
@@ -143,10 +143,10 @@ secure-release-platform/
 - ✅ Trivy (aquasec/trivy:latest) - 245MB
 - ✅ Gitleaks (zricethezav/gitleaks:latest) - 75.8MB
 
-**Security Group** : sg-05350268f9cd57c3b
+**Security Group** : sg-XXXXXXXXXXXXXXXXX2
 - Port 22 (SSH) : 146.70.148.54/32
 
-**SSH** : `ssh -i ~/.ssh/lab-devops-key.pem ubuntu@15.188.127.106`
+**SSH** : `ssh -i ~/.ssh/lab-devops-key.pem ubuntu@YOUR_EC2_PUBLIC_IP_2`
 
 **Terraform state** : Local (`terraform/terraform.tfstate`)
 
@@ -169,7 +169,7 @@ secure-release-platform/
 
 ### 4.1 Jenkins Configuration
 
-**URL** : http://35.180.38.208:8080  
+**URL** : http://YOUR_EC2_PUBLIC_IP_1:8080  
 **Version** : Jenkins 2.541.1  
 **Job** : `secure-release-platform-pipeline`  
 **Builds total** : 10 (6 SUCCESS, 4 FAILURE instructifs)
@@ -231,7 +231,7 @@ POST /projects            # Créer projet
 GET  /projects/{id}       # Détail projet
 ```
 
-**URL publique** : http://35.180.38.208:8000
+**URL publique** : http://YOUR_EC2_PUBLIC_IP_1:8000
 
 ### 5.3 Métriques Exposées (/metrics)
 
@@ -245,7 +245,7 @@ GET  /projects/{id}       # Détail projet
 
 ### 6.1 Prometheus
 
-**URL** : http://35.180.38.208:9090  
+**URL** : http://YOUR_EC2_PUBLIC_IP_1:9090  
 **Status** : ✅ Healthy  
 **Version** : Latest (prom/prometheus:latest)  
 **Scrape interval** : 10 secondes  
@@ -255,8 +255,8 @@ GET  /projects/{id}       # Détail projet
 
 ### 6.2 Grafana
 
-**URL** : http://35.180.38.208:3000  
-**Credentials** : admin / SecurePass2026!  
+**URL** : http://YOUR_EC2_PUBLIC_IP_1:3000  
+**Credentials** : admin / YOUR_GRAFANA_PASSWORD  
 **Version** : 12.3.3  
 **Status** : ✅ Database OK
 
@@ -276,10 +276,10 @@ GET  /projects/{id}       # Détail projet
 |-------|--------|---|------|--------|
 | 1 - MVP local | ✅ | 100% | 2026-02-08 | Tests 7/7, Docker OK |
 | 2 - Docker EC2 | ✅ | 100% | 2026-02-08 | Ansible OK |
-| 3 - API Prod | ✅ | 100% | 2026-02-08 | http://35.180.38.208:8000 |
+| 3 - API Prod | ✅ | 100% | 2026-02-08 | http://YOUR_EC2_PUBLIC_IP_1:8000 |
 | 4 - Jenkins CI/CD | ✅ | 100% | 2026-02-22 | Build #6 SUCCESS |
 | 5a - DevSecOps | ✅ | 100% | 2026-02-22 | Builds #7-10, Policy Gate |
-| 5b - Terraform | ✅ | 100% | 2026-02-22 | EC2 i-0895fb26e33d874d8 |
+| 5b - Terraform | ✅ | 100% | 2026-02-22 | EC2 i-XXXXXXXXXXXXX2 |
 | 6 - Observabilité | ⏳ | 80% | 2026-02-22 | Prometheus + Grafana OK |
 
 **Score global** : 6.8/7 = **97% complété** 🎯
@@ -382,13 +382,13 @@ terraform apply
 ### Monitoring
 ```bash
 # Prometheus
-curl http://35.180.38.208:9090/-/healthy
+curl http://YOUR_EC2_PUBLIC_IP_1:9090/-/healthy
 
 # Métriques API
-curl http://35.180.38.208:8000/metrics
+curl http://YOUR_EC2_PUBLIC_IP_1:8000/metrics
 
 # Grafana
-open http://35.180.38.208:3000
+open http://YOUR_EC2_PUBLIC_IP_1:3000
 ```
 
 ### AWS
@@ -397,7 +397,7 @@ open http://35.180.38.208:3000
 ./scripts/update-aws-sg.sh
 
 # SSH EC2
-ssh -i ~/.ssh/lab-devops-key.pem ubuntu@35.180.38.208
+ssh -i ~/.ssh/lab-devops-key.pem ubuntu@YOUR_EC2_PUBLIC_IP_1
 ```
 
 ---

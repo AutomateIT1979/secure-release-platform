@@ -8,7 +8,7 @@ pipeline {
     
     environment {
         DOCKER_IMAGE = "secure-release-platform"
-        EC2_IP = "35.180.38.208"
+        EC2_IP = "YOUR_EC2_PUBLIC_IP_1"
     }
     
     stages {

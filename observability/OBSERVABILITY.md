@@ -8,15 +8,15 @@
 ## Services Déployés
 
 ### Prometheus
-- **URL** : http://35.180.38.208:9090
+- **URL** : http://YOUR_EC2_PUBLIC_IP_1:9090
 - **Version** : Latest (prom/prometheus:latest)
 - **Scrape interval** : 10 secondes
 - **Target** : FastAPI (api:8000/metrics)
 - **Status** : ✅ Healthy
 
 ### Grafana
-- **URL** : http://35.180.38.208:3000
-- **Credentials** : admin / SecurePass2026!
+- **URL** : http://YOUR_EC2_PUBLIC_IP_1:3000
+- **Credentials** : admin / YOUR_GRAFANA_PASSWORD
 - **Version** : 12.3.3
 - **Status** : ✅ Database OK
 
@@ -36,7 +36,7 @@
 
 ### 1. FastAPI HTTP Metrics
 **UID** : b81d8f20-db78-4e9c-951d-93638c5e942a  
-**URL** : http://35.180.38.208:3000/d/b81d8f20-db78-4e9c-951d-93638c5e942a/fastapi-http-metrics
+**URL** : http://YOUR_EC2_PUBLIC_IP_1:3000/d/b81d8f20-db78-4e9c-951d-93638c5e942a/fastapi-http-metrics
 
 **Panels** :
 - HTTP Request Rate (rate per second)
@@ -47,7 +47,7 @@
 
 ### 2. Python Runtime Metrics
 **UID** : 4c122fd6-6d7b-46df-97c6-ce89e9adcfd8  
-**URL** : http://35.180.38.208:3000/d/4c122fd6-6d7b-46df-97c6-ce89e9adcfd8/python-runtime-metrics
+**URL** : http://YOUR_EC2_PUBLIC_IP_1:3000/d/4c122fd6-6d7b-46df-97c6-ce89e9adcfd8/python-runtime-metrics
 
 **Panels** :
 - Memory Usage (Resident + Virtual)

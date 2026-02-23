@@ -17,7 +17,7 @@ Les sections marquées "DERNIÈRE INFO CONNUE" indiquent des données historique
 ### 1.1 Système
 - **OS** : Ubuntu (WSL)
 - **Utilisateur** : `administrator`
-- **Chemin projet** : `/home/administrator/lab-devops/secure-release-platform`
+- **Chemin projet** : `/home/YOUR_USERNAME/lab-devops/secure-release-platform`
 
 ### 1.2 Versions outils (vérifiées)
 ```
@@ -172,17 +172,17 @@ ansible-playbook -i ansible/inventories/staging/hosts.yml \
 ### 5.1 Instance EC2
 **⚠️ INFO NON VÉRIFIÉE DEPUIS LE 2026-02-08**
 
-- **ID** : `i-01c77636889cc7f4a`
+- **ID** : `i-XXXXXXXXXXXXX1`
 - **Nom** : `lab-devops-ec2`
-- **IP publique** : `35.180.38.208` (peut avoir changé)
-- **IP privée** : `172.31.7.253`
+- **IP publique** : `YOUR_EC2_PUBLIC_IP_1` (peut avoir changé)
+- **IP privée** : `172.31.X.X`
 - **Région** : `eu-west-3` (Paris)
 - **OS** : Ubuntu 22.04.5 LTS
 
 ### 5.2 Security Group
 **⚠️ INFO NON VÉRIFIÉE DEPUIS LE 2026-02-08**
 
-- **ID** : `sg-0db21b6219faa2fca`
+- **ID** : `sg-XXXXXXXXXXXXXXXXX1`
 - **Règles inbound** :
   - Port 22 (SSH) : `146.70.148.78/32` (IP locale, change régulièrement)
   - Port 80 (HTTP) : `146.70.148.78/32`
@@ -201,7 +201,7 @@ ansible-playbook -i ansible/inventories/staging/hosts.yml \
 ### 5.4 Connexion SSH
 **Commande** :
 ```bash
-ssh -i ~/.ssh/lab-devops-key.pem ubuntu@35.180.38.208
+ssh -i ~/.ssh/lab-devops-key.pem ubuntu@YOUR_EC2_PUBLIC_IP_1
 ```
 
 **⚠️ PROBLÈME CONNU** : L'IP publique locale change régulièrement, nécessite mise à jour du Security Group.
@@ -213,7 +213,7 @@ curl -s ifconfig.me
 
 # Mettre à jour Security Group (nécessite AWS CLI configuré)
 aws ec2 authorize-security-group-ingress \
-  --group-id sg-0db21b6219faa2fca \
+  --group-id sg-XXXXXXXXXXXXXXXXX1 \
   --protocol tcp --port 22 \
   --cidr $(curl -s ifconfig.me)/32
 ```
@@ -558,7 +558,7 @@ git commit -m "docs: update LAB_REFERENCE.md - audit 2026-02-20"
 **Durée** : ~5 minutes
 
 **Résultats** :
-- ✅ API déployée sur EC2 (35.180.38.208:8000)
+- ✅ API déployée sur EC2 (YOUR_EC2_PUBLIC_IP_1:8000)
 - ✅ Docker Compose opérationnel
 - ✅ PostgreSQL actif
 - ✅ Health check : {"status":"ok"}
@@ -566,9 +566,9 @@ git commit -m "docs: update LAB_REFERENCE.md - audit 2026-02-20"
 
 **Commandes de vérification** :
 ```bash
-curl http://35.180.38.208:8000/health
-curl http://35.180.38.208:8000/version
-curl http://35.180.38.208:8000/projects
+curl http://YOUR_EC2_PUBLIC_IP_1:8000/health
+curl http://YOUR_EC2_PUBLIC_IP_1:8000/version
+curl http://YOUR_EC2_PUBLIC_IP_1:8000/projects
 ```
 
 **État final** : Jalon 3 complètement validé
@@ -596,19 +596,19 @@ curl http://35.180.38.208:8000/projects
 
 **Commandes exécutées** :
 ```bash
-aws ec2 stop-instances --instance-ids i-01c77636889cc7f4a --region eu-west-3
-aws ec2 modify-instance-attribute --instance-id i-01c77636889cc7f4a --instance-type t3.small --region eu-west-3
-aws ec2 start-instances --instance-ids i-01c77636889cc7f4a --region eu-west-3
+aws ec2 stop-instances --instance-ids i-XXXXXXXXXXXXX1 --region eu-west-3
+aws ec2 modify-instance-attribute --instance-id i-XXXXXXXXXXXXX1 --instance-type t3.small --region eu-west-3
+aws ec2 start-instances --instance-ids i-XXXXXXXXXXXXX1 --region eu-west-3
 ```
 
 **⚠️ CHANGEMENT IP PUBLIQUE** :
-- Ancienne IP : `35.180.38.208`
-- **Nouvelle IP** : `35.180.38.208` ← UTILISER CELLE-CI
+- Ancienne IP : `YOUR_EC2_PUBLIC_IP_1`
+- **Nouvelle IP** : `YOUR_EC2_PUBLIC_IP_1` ← UTILISER CELLE-CI
 
 **Impact** :
 - ✅ Security Group mis à jour automatiquement (script)
-- ✅ Jenkins accessible : http://35.180.38.208:8080
-- ⏳ API à redémarrer : http://35.180.38.208:8000
+- ✅ Jenkins accessible : http://YOUR_EC2_PUBLIC_IP_1:8080
+- ⏳ API à redémarrer : http://YOUR_EC2_PUBLIC_IP_1:8000
 
 
 ## MISE À JOUR CRITIQUE - 2026-02-22 (Jalon 4 COMPLÉTÉ) ✅
@@ -628,14 +628,14 @@ aws ec2 start-instances --instance-ids i-01c77636889cc7f4a --region eu-west-3
 **Corrections appliquées** :
 - Permissions Docker : `usermod -aG docker jenkins`
 - Jenkinsfile simplifié (sans Ansible, sans pip)
-- IP EC2 mise à jour : 35.180.38.208
+- IP EC2 mise à jour : YOUR_EC2_PUBLIC_IP_1
 
 **Résultat** :
 - Pipeline fonctionnel end-to-end
 - API testée automatiquement
 - Build automatique depuis GitHub
 
-**Accès Jenkins** : http://35.180.38.208:8080
+**Accès Jenkins** : http://YOUR_EC2_PUBLIC_IP_1:8080
 **Job** : secure-release-platform-pipeline
 
 **Jalon 4 : CI/CD Pipeline COMPLÉTÉ** 🎯
@@ -948,8 +948,8 @@ Créer une EC2 dédiée aux scans de sécurité via Terraform, démontrant l'Inf
 ### Architecture
 
 **Séparation des responsabilités** :
-- **EC2 #1** (35.180.38.208) : Jenkins + API + Prometheus + Grafana
-- **EC2 #2** (15.188.127.106) : Scans sécurité dédiés (Trivy + Gitleaks)
+- **EC2 #1** (YOUR_EC2_PUBLIC_IP_1) : Jenkins + API + Prometheus + Grafana
+- **EC2 #2** (YOUR_EC2_PUBLIC_IP_2) : Scans sécurité dédiés (Trivy + Gitleaks)
 
 **Avantages** :
 - Isolation sécurité
@@ -962,10 +962,10 @@ Créer une EC2 dédiée aux scans de sécurité via Terraform, démontrant l'Inf
 
 | Ressource | ID | Détails |
 |-----------|-----|---------|
-| **EC2 Instance** | `i-0895fb26e33d874d8` | t3.micro, Ubuntu 22.04 |
-| **Security Group** | `sg-05350268f9cd57c3b` | SSH port 22 uniquement |
-| **IP Publique** | `15.188.127.106` | Accessible |
-| **IP Privée** | `172.31.12.54` | VPC default |
+| **EC2 Instance** | `i-XXXXXXXXXXXXX2` | t3.micro, Ubuntu 22.04 |
+| **Security Group** | `sg-XXXXXXXXXXXXXXXXX2` | SSH port 22 uniquement |
+| **IP Publique** | `YOUR_EC2_PUBLIC_IP_2` | Accessible |
+| **IP Privée** | `172.31.Y.Y` | VPC default |
 
 **Configuration** :
 - AMI : Ubuntu 22.04 LTS (ami-04c332520bd9cedb4)
@@ -1041,7 +1041,7 @@ Grafana (port 3000)
     ↓ dashboards + alerting
 ```
 
-**Déploiement** : EC2 #1 (35.180.38.208) via Docker Compose
+**Déploiement** : EC2 #1 (YOUR_EC2_PUBLIC_IP_1) via Docker Compose
 
 ---
 
@@ -1067,7 +1067,7 @@ async def metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 ```
 
-**Endpoint** : `GET http://35.180.38.208:8000/metrics`
+**Endpoint** : `GET http://YOUR_EC2_PUBLIC_IP_1:8000/metrics`
 
 **Métriques exposées** :
 - Python runtime : GC, memory, CPU
@@ -1100,7 +1100,7 @@ services:
       - prometheus_data:/prometheus
 ```
 
-**Accès** : http://35.180.38.208:9090
+**Accès** : http://YOUR_EC2_PUBLIC_IP_1:9090
 **Status** : ✅ Healthy ("Prometheus Server is Healthy")
 
 ---
@@ -1116,11 +1116,11 @@ services:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=SecurePass2026!
+      - GF_SECURITY_ADMIN_PASSWORD=YOUR_GRAFANA_PASSWORD
 ```
 
-**Accès** : http://35.180.38.208:3000
-**Credentials** : admin / SecurePass2026!
+**Accès** : http://YOUR_EC2_PUBLIC_IP_1:3000
+**Credentials** : admin / YOUR_GRAFANA_PASSWORD
 **Status** : ✅ Opérationnel (v12.3.3, database OK)
 
 ---
@@ -1162,14 +1162,14 @@ services:
 
 | Paramètre | Valeur |
 |-----------|--------|
-| **ID** | i-01c77636889cc7f4a |
+| **ID** | i-XXXXXXXXXXXXX1 |
 | **Nom** | lab-devops-ec2 |
-| **IP Publique** | 35.180.38.208 |
-| **IP Privée** | 172.31.7.253 |
+| **IP Publique** | YOUR_EC2_PUBLIC_IP_1 |
+| **IP Privée** | 172.31.X.X |
 | **Type** | t3.small (2GB RAM, 2 vCPU) |
 | **OS** | Ubuntu 22.04.5 LTS |
 | **Région** | eu-west-3 (Paris) |
-| **Security Group** | sg-0db21b6219faa2fca |
+| **Security Group** | sg-XXXXXXXXXXXXXXXXX1 |
 
 **Services actifs** :
 - Jenkins (port 8080) : CI/CD automation
@@ -1178,7 +1178,7 @@ services:
 - Prometheus (port 9090) : Metrics collection
 - Grafana (port 3000) : Dashboards
 
-**SSH** : `ssh -i ~/.ssh/lab-devops-key.pem ubuntu@35.180.38.208`
+**SSH** : `ssh -i ~/.ssh/lab-devops-key.pem ubuntu@YOUR_EC2_PUBLIC_IP_1`
 
 ---
 
@@ -1186,21 +1186,21 @@ services:
 
 | Paramètre | Valeur |
 |-----------|--------|
-| **ID** | i-0895fb26e33d874d8 |
+| **ID** | i-XXXXXXXXXXXXX2 |
 | **Nom** | lab-devops-scans-ec2 |
-| **IP Publique** | 15.188.127.106 |
-| **IP Privée** | 172.31.12.54 |
+| **IP Publique** | YOUR_EC2_PUBLIC_IP_2 |
+| **IP Privée** | 172.31.Y.Y |
 | **Type** | t3.micro (1GB RAM, 2 vCPU) |
 | **OS** | Ubuntu 22.04 LTS |
 | **Managed By** | Terraform ✨ |
-| **Security Group** | sg-05350268f9cd57c3b |
+| **Security Group** | sg-XXXXXXXXXXXXXXXXX2 |
 
 **Outils pré-installés** :
 - Docker 29.2.1
 - Trivy (aquasec/trivy:latest)
 - Gitleaks (zricethezav/gitleaks:latest)
 
-**SSH** : `ssh -i ~/.ssh/lab-devops-key.pem ubuntu@15.188.127.106`
+**SSH** : `ssh -i ~/.ssh/lab-devops-key.pem ubuntu@YOUR_EC2_PUBLIC_IP_2`
 
 ---
 
@@ -1222,7 +1222,7 @@ services:
 |-------|--------|---------|------|
 | **1 - MVP local** | ✅ **100%** | Tests 7/7, Docker OK | 2026-02-08 |
 | **2 - Docker EC2** | ✅ **100%** | Ansible playbook OK | 2026-02-08 |
-| **3 - API Production** | ✅ **100%** | http://35.180.38.208:8000 | 2026-02-08 |
+| **3 - API Production** | ✅ **100%** | http://YOUR_EC2_PUBLIC_IP_1:8000 | 2026-02-08 |
 | **4 - Jenkins CI/CD** | ✅ **100%** | Build #6 SUCCESS | 2026-02-22 |
 | **5a - DevSecOps Scans** | ✅ **100%** | Builds #7-10, Policy Gate | 2026-02-22 |
 | **5b - Terraform IaC** | ✅ **100%** | EC2 scans déployée | 2026-02-22 |

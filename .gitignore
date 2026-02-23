@@ -9,3 +9,18 @@ __pycache__/
 dist/
 build/
 test.db
+
+# Terraform state files (contain sensitive data)
+terraform.tfstate
+terraform.tfstate.backup
+terraform/terraform.tfstate*
+*.tfstate
+*.tfstate.*
+
+# Backup files
+*.backup
+*.bak
+
+# Sensitive configuration files
+observability/prometheus.yml
+observability/docker-compose-observability.yml

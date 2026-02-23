@@ -5,7 +5,7 @@
 set -e
 
 # Configuration
-SG_ID="sg-0db21b6219faa2fca"
+SG_ID="sg-XXXXXXXXXXXXXXXXX1"
 REGION="eu-west-3"
 PORTS=(22 80 8080)
 
