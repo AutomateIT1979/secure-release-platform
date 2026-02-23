@@ -13,7 +13,7 @@ scrape_configs:
   # FastAPI application metrics
   - job_name: 'fastapi'
     static_configs:
-      - targets: ['api:8000']
+      - targets: ['172.31.7.253:8000']  # IP privée EC2 au lieu de api:8000
         labels:
           service: 'secure-release-platform-api'
           component: 'backend'
