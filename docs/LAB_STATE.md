@@ -1,457 +1,408 @@
-# État du Lab DevSecOps — 2026-02-08
+# État du Lab DevSecOps — 2026-02-22
 
 ## 1) Vue d'ensemble
 
 Ce document trace l'état **factuel** du laboratoire DevSecOps pour le projet "Secure Release Platform".
 
-**Objectif du projet** : Construire une chaîne DevSecOps complète (CI/CD, scans sécurité, déploiement automatisé, observabilité, rollback).
+**Objectif du projet** : Construire une chaîne DevSecOps complète (CI/CD, scans sécurité, déploiement automatisé, observabilité).
 
-**Date de dernière mise à jour** : 2026-02-08 13:47 UTC
+**Date de dernière mise à jour** : 2026-02-22 19:00 UTC
+
+**Statut global** : ✅ **PRODUCTION READY** (97% complété)
 
 ---
 
 ## 2) Environnement local (WSL)
 
 ### 2.1 Système
-- **OS** : Ubuntu (WSL sous Windows)
+- **OS** : Ubuntu 24.04 (WSL sous Windows 11)
 - **Utilisateur** : `administrator`
 - **Chemin projet** : `/home/administrator/lab-devops/secure-release-platform`
 
-
 ### 2.2 Outils installés
-| Outil | Version | Statut |
-|-------|---------|--------|
-| Python | 3.12.3 | ✅ venv actif (`.venv`) |
-| Docker | 29.1.3 | ✅ |
-| Docker Compose | v5.0.0 | ✅ |
-| Ansible | core 2.19.5 | ✅ |
-| Terraform | v1.14.4 | ✅ |
-| Jenkins | 2.541.1 | ✅ Installé via systemd (port 8080) |
 
-### 2.5 Jenkins (WSL)
-- **Installation** : Via systemd (pas Docker)
-- **Version** : Jenkins 2.541.1
-- **Service** : `jenkins.service` actif
-- **URL** : `http://localhost:8080/`
-- **État** : Opérationnel ✅
-- **Alertes** :
-  - Java 17 end of life (31 mars 2026)
-  - Building on built-in node (security issue)
-- **Plugins** : À documenter
-- **Jobs** : Aucun (à créer)
+| Outil | Version | Statut | Usage |
+|-------|---------|--------|-------|
+| Python | 3.12.3 | ✅ | venv actif (`.venv`) |
+| Docker | 29.1.3 | ✅ | Build images localement |
+| Docker Compose | v5.0.0 | ✅ | Stack locale (API + DB) |
+| Ansible | core 2.19.5 | ✅ | Déploiements EC2 |
+| Terraform | v1.14.4 | ✅ | IaC (EC2 scans) |
+| AWS CLI | 2.33.11 | ✅ | Gestion AWS |
+| pytest | 8.0.2 | ✅ | Tests unitaires (7/7) |
 
 ### 2.3 État du repo Git
 
-**Branch** : `main`
+**Remote** : https://github.com/AutomateIT1979/secure-release-platform.git  
+**Branch** : `main`  
+**Dernier commit** : `7f1679f` (2026-02-22)  
+**Commits aujourd'hui** : 26 commits
 
-**Fichiers suivis par Git** (6 fichiers documentation) :
+**Derniers commits** :
 ```
-.gitignore
-README.md
-docs/DECISIONS.md
-docs/PROJECT_STATE.md
-docs/ROADMAP.md
-docs/RUNBOOKS/README.md
-```
-
-**Fichiers NON suivis** (code applicatif présent localement) :
-```
-app/main.py
-app/__init__.py
-tests/test_health.py
-Dockerfile
-docker-compose.yml
-requirements.txt
-.env.example
+7f1679f - feat(observability): deploy Prometheus + Grafana stack
+83588a9 - feat(observability): add Prometheus metrics endpoint
+2794e72 - feat(terraform): add dedicated EC2 for security scanning
+cf4bde1 - docs: add Policy Gate documentation (build #10)
+283f3ba - feat(jenkins): implement Policy Gate for security enforcement
 ```
 
-**Problème identifié** : Le code applicatif n'est pas versionné → **Action requise** : `git add` puis `git commit` avant toute restructuration.
+**Fichiers non versionnés** :
+- `test.db` (base locale tests)
+- `app/main.py.backup` (backup instrumentation)
+- `terraform/.terraform/` (état Terraform)
+- `terraform/terraform.tfvars` (secrets gitignored)
 
-### 2.4 Tests
-- **Framework** : pytest
-- **Problème actuel** : `ModuleNotFoundError: No module named 'app'`
-- **Cause** : pytest ne trouve pas le module `app/` (problème de `sys.path`)
-- **Solution prévue** : Ajouter `pytest.ini` avec `pythonpath = .`
+### 2.4 Structure du projet
+```
+secure-release-platform/
+├── app/                    # API FastAPI (instrumented Prometheus)
+│   ├── main.py             # Routes + /metrics endpoint
+│   ├── database.py
+│   └── models.py
+├── tests/                  # 7 tests pytest
+├── ansible/
+│   ├── inventories/staging/hosts.yml
+│   └── playbooks/
+│       ├── deploy_api.yml
+│       ├── install_docker.yml
+│       └── install_jenkins.yml
+├── terraform/              # IaC EC2 scans
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── outputs.tf
+│   └── terraform.tfvars (gitignored)
+├── observability/          # Prometheus + Grafana
+│   ├── prometheus.yml
+│   └── docker-compose-observability.yml
+├── docs/                   # Documentation complète
+│   ├── LAB_REFERENCE.md    # Source de vérité (25K)
+│   ├── LAB_STATE.md        # Ce fichier
+│   ├── DECISIONS.md
+│   └── ROADMAP.md
+├── Dockerfile
+├── Jenkinsfile             # Pipeline DevSecOps
+├── docker-compose.yml
+├── pytest.ini
+└── requirements.txt
+```
 
 ---
 
-## 3) Infrastructure AWS
+## 3) Infrastructure AWS — ✅ VÉRIFIÉ (2026-02-22)
 
-### 3.1 Instance EC2
+### 3.1 EC2 #1 - Jenkins + API + Observabilité
 
-**Détails** :
-- **ID** : `i-01c77636889cc7f4a`
-- **Nom** : `lab-devops-ec2`
-- **État** : `running`
-- **IP publique** : `35.180.54.218`
-- **IP privée** : `172.31.7.253`
-- **Région** : `eu-west-3` (Paris, déduit de l'IP)
+| Paramètre | Valeur |
+|-----------|--------|
+| **ID** | i-01c77636889cc7f4a |
+| **Nom** | lab-devops-ec2 |
+| **IP Publique** | 35.180.38.208 |
+| **IP Privée** | 172.31.7.253 |
+| **Type** | t3.small (2GB RAM, 2 vCPU) |
+| **OS** | Ubuntu 22.04.5 LTS |
+| **Uptime** | Stable depuis upgrade (2026-02-22) |
+| **Usage RAM** | ~50% (1GB/2GB) |
+| **Usage Disk** | 74.5% de 7.57GB |
 
-**Système** :
-- **OS** : Ubuntu 22.04.5 LTS
-- **Kernel** : 6.8.0-1044-aws
-- **Architecture** : x86_64
+**Services actifs** :
+- ✅ Jenkins 2.541.1 (port 8080) : 10 builds complétés
+- ✅ API FastAPI (port 8000) : /health OK, /metrics exposé
+- ✅ PostgreSQL (port 5432) : Database production
+- ✅ Prometheus (port 9090) : Scraping /metrics every 10s
+- ✅ Grafana (port 3000) : v12.3.3, admin ready
 
-### 3.2 Security Group
+**Security Group** : sg-0db21b6219faa2fca
+- Port 22 (SSH) : 146.70.148.54/32
+- Port 80 (HTTP) : 146.70.148.54/32
+- Port 8000 (API) : 0.0.0.0/0 (public)
+- Port 8080 (Jenkins) : 146.70.148.54/32
+- Port 9090 (Prometheus) : 146.70.148.54/32
+- Port 3000 (Grafana) : 146.70.148.54/32
 
-**ID** : `sg-0db21b6219faa2fca`  
-**Nom** : `lab-devops-web-sg`
-
-**Règles inbound** :
-| Port | Protocole | Source | Usage |
-|------|-----------|--------|-------|
-| 22 | TCP | `146.70.148.78/32` | SSH (IP mise à jour le 2026-02-08) |
-| 80 | TCP | `146.70.148.78/32` | HTTP (Nginx) |
-
-**Note** : L'IP publique change régulièrement → nécessite mise à jour manuelle du Security Group.
-
-### 3.3 Outils installés sur EC2
-
-| Outil | Version | Statut |
-|-------|---------|--------|
-| Nginx | 1.18.0 | ✅ Actif (port 80) |
-| Git | 2.34.1 | ✅ |
-| Python | 3.10.12 | ✅ |
-| Docker | ❌ | **Non installé** |
-| Docker Compose | ❌ | **Non installé** |
-| Jenkins | ❌ | **Non installé** |
-| Ansible | ❌ | **Non installé** |
-| Terraform | ❌ | **Non installé** |
-
-### 3.4 Services actifs
-- **Nginx** : écoute sur port 80 (serveur web par défaut)
-- **SSH** : écoute sur port 22
-
-### 3.5 Répertoires
-- `/var/www/html` : page par défaut Nginx
-- `/opt/` : vide (prévu pour applications)
+**SSH** : `ssh -i ~/.ssh/lab-devops-key.pem ubuntu@35.180.38.208`
 
 ---
 
-## 4) Connexion SSH
+### 3.2 EC2 #2 - Security Scans (Terraform)
 
-**Méthode** : SSH avec clé privée
+| Paramètre | Valeur |
+|-----------|--------|
+| **ID** | i-0895fb26e33d874d8 |
+| **Nom** | lab-devops-scans-ec2 |
+| **IP Publique** | 15.188.127.106 |
+| **IP Privée** | 172.31.12.54 |
+| **Type** | t3.micro (1GB RAM, 2 vCPU) |
+| **OS** | Ubuntu 22.04 LTS |
+| **Managed By** | Terraform ✨ |
+| **Uptime** | Depuis création (2026-02-22 17:11 UTC) |
+| **Usage RAM** | ~34% (340MB/1GB) |
 
-**Commande** :
+**Outils pré-installés** :
+- ✅ Docker 29.2.1
+- ✅ Trivy (aquasec/trivy:latest) - 245MB
+- ✅ Gitleaks (zricethezav/gitleaks:latest) - 75.8MB
+
+**Security Group** : sg-05350268f9cd57c3b
+- Port 22 (SSH) : 146.70.148.54/32
+
+**SSH** : `ssh -i ~/.ssh/lab-devops-key.pem ubuntu@15.188.127.106`
+
+**Terraform state** : Local (`terraform/terraform.tfstate`)
+
+---
+
+### 3.3 Coûts AWS
+
+| Ressource | Coût/mois | Heures/mois | Total mensuel |
+|-----------|-----------|-------------|---------------|
+| EC2 t3.small | $0.0208/h | 730h | ~$15.18 |
+| EC2 t3.micro | $0.0104/h | 730h | ~$7.59 |
+| **Total** | | | **~$22.77/mois** |
+
+**Budget** : $110 USD crédits AWS (expire 2026-06-09)  
+**Couverture** : ~4.8 mois
+
+---
+
+## 4) CI/CD Pipeline — ✅ OPÉRATIONNEL (Jenkins)
+
+### 4.1 Jenkins Configuration
+
+**URL** : http://35.180.38.208:8080  
+**Version** : Jenkins 2.541.1  
+**Job** : `secure-release-platform-pipeline`  
+**Builds total** : 10 (6 SUCCESS, 4 FAILURE instructifs)
+
+**Pipeline stages** :
+1. Checkout (Git)
+2. Security Scan - Secrets (Gitleaks)
+3. Build Docker Image
+4. Security Scan - Docker Image [POLICY GATE] (Trivy)
+5. Deploy to EC2
+6. Smoke Test (curl /health + /version)
+
+### 4.2 Builds History
+
+| Build | Status | Commit | Notes |
+|-------|--------|--------|-------|
+| #1-5 | Tests | - | Setup initial |
+| #6 | ✅ SUCCESS | 475afc5 | Jalon 4 complété |
+| #7 | ✅ SUCCESS | 033133f | DevSecOps scans (6 HIGH) |
+| #8 | ❌ FAILURE | 116bd9d | Conflit dépendances |
+| #9 | ✅ SUCCESS | a62f98c | Patches appliqués (5 HIGH) |
+| #10 | ❌ FAILURE | 283f3ba | **Policy Gate** (blocage attendu) |
+
+**Dernier build** : #10 (FAILURE volontaire - démontre enforcement)
+
+### 4.3 Security Scans Results
+
+**Gitleaks** : ✅ 0 secret détecté  
+**Trivy** : ⚠️ 5 HIGH vulnérabilités
+
+**Vulnérabilités actuelles** :
+- Debian : 2 HIGH (glibc CVE-2026-0861)
+- Python : 3 HIGH
+  1. jaraco.context 5.3.0 (CVE-2026-23949) - vendored setuptools
+  2. starlette 0.40.0 (CVE-2025-62727) - nécessite 0.49.1
+  3. wheel 0.45.1 (CVE-2026-24049) - vendored setuptools
+
+**Évolution** : 6 HIGH (build #7) → 5 HIGH (build #9) = -16% ✅
+
+---
+
+## 5) Application (MVP) — ✅ PRODUCTION
+
+### 5.1 Stack Technique
+
+- **Framework** : FastAPI 0.115.6
+- **Base de données** : PostgreSQL 15 (Docker)
+- **ORM** : SQLAlchemy 2.0.27
+- **Tests** : pytest 8.0.2 (7/7 passing)
+- **Observabilité** : Prometheus + Grafana
+
+### 5.2 Routes API
+```
+GET  /health              # Healthcheck
+GET  /version             # Version API
+GET  /metrics             # Prometheus metrics ← NEW
+GET  /projects            # Liste projets
+POST /projects            # Créer projet
+GET  /projects/{id}       # Détail projet
+```
+
+**URL publique** : http://35.180.38.208:8000
+
+### 5.3 Métriques Exposées (/metrics)
+
+- **Python runtime** : GC collections, memory
+- **Process** : virtual/resident memory, CPU time, open FDs
+- **HTTP** : request count, size, duration (instrumented)
+
+---
+
+## 6) Observabilité — ⏳ 80% COMPLÉTÉ
+
+### 6.1 Prometheus
+
+**URL** : http://35.180.38.208:9090  
+**Status** : ✅ Healthy  
+**Version** : Latest (prom/prometheus:latest)  
+**Scrape interval** : 10 secondes  
+**Target** : FastAPI (api:8000/metrics)
+
+**Volume** : prometheus_data (persistent)
+
+### 6.2 Grafana
+
+**URL** : http://35.180.38.208:3000  
+**Credentials** : admin / SecurePass2026!  
+**Version** : 12.3.3  
+**Status** : ✅ Database OK
+
+**Volume** : grafana_data (persistent)
+
+### 6.3 TODO
+
+- [ ] Configurer datasource Prometheus dans Grafana
+- [ ] Créer dashboards (HTTP, Python runtime)
+- [ ] Configurer alerting rules (API down, error rate)
+
+---
+
+## 7) Jalons — Progression
+
+| Jalon | Statut | % | Date | Preuve |
+|-------|--------|---|------|--------|
+| 1 - MVP local | ✅ | 100% | 2026-02-08 | Tests 7/7, Docker OK |
+| 2 - Docker EC2 | ✅ | 100% | 2026-02-08 | Ansible OK |
+| 3 - API Prod | ✅ | 100% | 2026-02-08 | http://35.180.38.208:8000 |
+| 4 - Jenkins CI/CD | ✅ | 100% | 2026-02-22 | Build #6 SUCCESS |
+| 5a - DevSecOps | ✅ | 100% | 2026-02-22 | Builds #7-10, Policy Gate |
+| 5b - Terraform | ✅ | 100% | 2026-02-22 | EC2 i-0895fb26e33d874d8 |
+| 6 - Observabilité | ⏳ | 80% | 2026-02-22 | Prometheus + Grafana OK |
+
+**Score global** : 6.8/7 = **97% complété** 🎯
+
+---
+
+## 8) Problèmes Résolus
+
+### 8.1 IP Dynamique (RÉSOLU ✅)
+**Solution** : Script `scripts/update-aws-sg.sh`  
+**Usage** : Exécuter avant chaque session  
+**Statut** : Automatisé
+
+### 8.2 EC2 Resources (RÉSOLU ✅)
+**Problème** : t3.micro insuffisant (freeze Jenkins)  
+**Solution** : Upgrade → t3.small (2GB RAM)  
+**Statut** : Stable depuis upgrade
+
+### 8.3 Dependency Conflicts (RÉSOLU ✅)
+**Problème** : FastAPI 0.110 incompatible starlette 0.40  
+**Solution** : Upgrade FastAPI → 0.115.6  
+**Statut** : Build #9 SUCCESS
+
+### 8.4 Prometheus .expose() (RÉSOLU ✅)
+**Problème** : `.expose()` ne créait pas l'endpoint  
+**Solution** : Approche manuelle `generate_latest()`  
+**Statut** : /metrics fonctionnel
+
+---
+
+## 9) Session 2026-02-22 — Résumé
+
+### Statistiques
+
+| Métrique | Valeur |
+|----------|--------|
+| **Durée** | ~12 heures |
+| **Commits** | 26 commits |
+| **Builds Jenkins** | 10 (6 success, 4 instructifs) |
+| **EC2 créées** | 1 (Terraform) |
+| **Services déployés** | 2 (Prometheus + Grafana) |
+| **Jalons complétés** | 3.8/4 (95%) |
+
+### Accomplissements
+
+1. ✅ **Jalon 4** : Jenkins CI/CD pipeline complet
+2. ✅ **Jalon 5a** : DevSecOps (Trivy + Gitleaks + Policy Gate)
+3. ✅ **Jalon 5b** : Terraform IaC (EC2 scans dédiée)
+4. ⏳ **Jalon 6** : Observabilité (Prometheus + Grafana déployés)
+
+### Défis Techniques Surmontés
+
+1. EC2 overload → Upgrade t3.micro → t3.small
+2. Jenkins freeze → Permissions Docker résolues
+3. Dependency conflicts → FastAPI upgrade
+4. Ansible YAML linting → 3 playbooks corrigés
+5. Prometheus instrumentation → Approche manuelle
+6. Multi-EC2 architecture → Terraform automation
+7. Policy Gate → Enforcement démontré (Build #10)
+
+---
+
+## 10) Prochaines Étapes
+
+### Court Terme (1-2h)
+- [ ] Configurer Prometheus datasource Grafana
+- [ ] Créer 2-3 dashboards basiques
+- [ ] Configurer 1 alerte (API down)
+
+### Moyen Terme (3-5h)
+- [ ] README.md portfolio avec screenshots
+- [ ] Architecture diagrams
+- [ ] Badges GitHub (tests, security)
+
+### Publication
+- [ ] Post LinkedIn avec highlights
+- [ ] GitHub public avec documentation
+
+---
+
+## ANNEXE - Commandes Essentielles
+
+### Tests locaux
 ```bash
-ssh -i ~/.ssh/lab-devops-key.pem ubuntu@35.180.54.218
-```
-
-**Clé** : `~/.ssh/lab-devops-key.pem` (permissions 400)
-
-**Utilisateur EC2** : `ubuntu`
-
----
-
-## 5) État du projet applicatif (MVP)
-
-### 5.1 API (Backend)
-- **Stack** : FastAPI (Python)
-- **Endpoints prévus** :
-  - `GET /health` → healthcheck
-  - `GET /version` → version applicative
-  - CRUD simple (à ajouter)
-
-**État actuel** :
-- Fichiers présents localement (`app/main.py`, `app/__init__.py`)
-- **NON versionnés** dans Git
-- **Tests** : `tests/test_health.py` présent
-- **Problème** : pytest échoue (import `app` non résolu)
-
-### 5.2 Base de données
-- **Stack prévue** : PostgreSQL (Docker)
-- **État actuel** : **Non déployée**
-
-### 5.3 Packaging
-- **Docker** : `Dockerfile` présent (non versionné)
-- **Docker Compose** : `docker-compose.yml` présent (non versionné)
-- **État actuel** : Jamais testé (`docker compose up` pas encore exécuté)
-
----
-
-## 6) Pipeline CI/CD (objectif)
-
-### 6.1 Jenkins
-- **Installation** : ✅ Installé sur WSL via systemd
-- **État actuel** : ✅ Installé sur WSL (version 2.541.1, port 8080)
-- **Jenkinsfile** : **Non créé**
-
-### 6.2 Étapes pipeline prévues
-1. Lint/format
-2. Tests unitaires + intégration
-3. Build image Docker
-4. Scans sécurité (SAST, SCA, secrets, SBOM, image scan)
-5. Policy gate (blocage si CRITICAL)
-6. Déploiement staging (Ansible)
-7. Smoke test (`/health`)
-8. Promotion prod (manuel) + rollback auto si KO
-
-**État actuel** : **Rien de déployé**
-
----
-
-## 7) Déploiement (Ansible)
-
-### 7.1 Ansible (local WSL)
-- **Version** : core 2.19.5
-- **Playbooks** : **Non créés**
-- **Inventaires** : **Non créés**
-
-### 7.2 Cible déploiement
-- **Serveur** : EC2 `35.180.54.218`
-- **Prérequis** : Docker + Docker Compose (à installer)
-- **État actuel** : **Pas de Docker sur EC2**
-
----
-
-## 8) DevSecOps (scans sécurité)
-
-### 8.1 Outils prévus
-| Outil | Usage | Statut |
-|-------|-------|--------|
-| gitleaks | Secret scanning | ❌ Non installé |
-| semgrep | SAST (code statique) | ❌ Non installé |
-| trivy | Image scanning | ❌ Non installé |
-| syft | SBOM generation | ❌ Non installé |
-
-### 8.2 Policy gate
-- **Règle** : Pipeline échoue si findings CRITICAL
-- **État actuel** : **Non implémenté**
-
----
-
-## 9) Observabilité
-
-### 9.1 Logs
-- **Format prévu** : JSON structuré
-- **État actuel** : **Non implémenté**
-
-### 9.2 Métriques
-- **Stack prévue** : Prometheus + Grafana
-- **État actuel** : **Non déployée**
-
-### 9.3 Alerting
-- **Stack prévue** : Alertmanager
-- **État actuel** : **Non déployé**
-
----
-
-## 10) Prochaines étapes (ordre recommandé)
-
-### Jalon 1 — Fixer le blocage actuel (local WSL)
-1. ✅ **FAIT** : Connexion SSH EC2 rétablie (IP mise à jour)
-2. ✅ **FAIT** : pytest.ini ajouté, tests passent pour fixer l'import `app`
-3. ✅ Code applicatif versionné (commit 9d1d7c3) (`git add app/ tests/ Dockerfile docker-compose.yml requirements.txt`)
-4. ✅ Docker Compose testé (healthcheck OK)
-5. ✅ Healthcheck OK : {"status":"ok"} : `curl http://localhost:8000/health`
-
-### Jalon 2 — Préparer EC2
-1. Installer Docker + Docker Compose sur EC2 (via Ansible ou script)
-2. Tester déploiement manuel de l'API sur EC2
-
-### Jalon 3 — CI/CD
-1. Installer Jenkins (EC2 ou Docker)
-2. Créer `Jenkinsfile` basique
-3. Intégrer scans sécurité
-
-### Jalon 4 — Déploiement automatisé
-1. Créer playbook Ansible
-2. Automatiser déploiement staging/prod
-3. Implémenter rollback
-
-### Jalon 5 — Observabilité
-1. Logs structurés JSON
-2. Prometheus + Grafana
-3. Alerting
-
----
-
-## 11) Commandes de diagnostic rapide
-
-### WSL
-```bash
-cd ~/lab-devops/secure-release-platform
-git status
-pytest -q
-docker compose up --build
-```
-
-### EC2
-```bash
-ssh -i ~/.ssh/lab-devops-key.pem ubuntu@35.180.54.218
-docker --version
-systemctl status nginx
-```
-
-### AWS CLI
-```bash
-# Lister instances
-aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId,State.Name,PublicIpAddress,Tags[?Key==`Name`].Value|[0]]' --output table
-
-# Voir Security Group
-aws ec2 describe-security-groups --group-ids sg-0db21b6219faa2fca --query 'SecurityGroups[0].IpPermissions[*].[IpProtocol,FromPort,ToPort,IpRanges[*].CidrIp]' --output table
-
-# Mettre à jour IP SSH
-aws ec2 authorize-security-group-ingress --group-id sg-0db21b6219faa2fca --protocol tcp --port 22 --cidr $(curl -s ifconfig.me)/32
-```
-
----
-
-## 12) Notes importantes
-
-### Sécurité
-- ⚠️ IP publique change régulièrement → Security Group doit être mis à jour
-- ⚠️ Aucun secret dans Git (utiliser `.env.example` + Vault/Jenkins Credentials)
-- ⚠️ Clé SSH `.pem` ne doit JAMAIS être versionnée
-
-### Git
-- Code applicatif présent localement mais **non versionné**
-- Avant `git mv` : TOUJOURS `git add` + `git commit` d'abord
-
-### Documentation
-- Source de vérité : `docs/LAB_STATE.md` (ce fichier)
-- Mettre à jour après chaque jalon
-
----
-
-## 13) Checklist "Prêt pour GitHub"
-
-- [ ] Code applicatif versionné
-- [ ] Tests passent (pytest vert)
-- [ ] Docker Compose fonctionne
-- [ ] Jenkinsfile créé
-- [ ] Playbook Ansible créé
-- [ ] Scans sécurité intégrés
-- [ ] Documentation complète (README, RUNBOOKS)
-- [ ] Preuves (captures, rapports) dans `docs/evidence/`
-- [ ] Aucun secret dans le repo
-
----
-
-## MISE À JOUR - 2026-02-08 (fin de journée)
-
-### Session complète : MVP local + Tests d'intégration
-
-**Durée** : ~4h (12h30-16h30)
-
-**Réalisations** :
-- ✅ API FastAPI : 5 routes fonctionnelles
-- ✅ PostgreSQL : intégré avec Docker Compose
-- ✅ Tests : 7 tests (2 unitaires + 5 intégration)
-- ✅ Git : 12 commits propres
-- ✅ Documentation : 1500+ lignes
-
-**État actuel** :
-```bash
-# Tests
-pytest -v  # 7 passed ✅
-
-# Docker
-docker compose up --build -d  # API + PostgreSQL ✅
-
-# Routes
-curl http://localhost:8000/health  # {"status":"ok"} ✅
-curl http://localhost:8000/projects  # Liste projets depuis DB ✅
-```
-
-**Prochaines étapes** :
-1. Jalon 2 : Déploiement EC2 (Ansible)
-2. Jalon 3 : CI/CD Jenkins
-3. Jalon 4 : DevSecOps scans
-
-**Fichiers clés** :
-- `app/main.py` : API complète
-- `app/database.py` : Connexion PostgreSQL
-- `app/models.py` : Modèle Project
-- `tests/conftest.py` : Fixtures pytest
-- `tests/test_integration.py` : Tests d'intégration
-- `docker-compose.yml` : 2 services
-
-**Commandes essentielles** :
-```bash
-# Tests
 pytest -v
-
-# Docker
 docker compose up --build -d
-docker compose logs --follow
-docker compose down
+curl http://localhost:8000/health
+```
 
-# Git
-git log --oneline --decorate -n 12
+### Déploiement
+```bash
+# Ansible
+ansible-playbook -i ansible/inventories/staging/hosts.yml ansible/playbooks/deploy_api.yml
 
-# API
-curl http://localhost:8000/docs  # Swagger UI
+# Terraform
+cd terraform/
+terraform apply
+```
+
+### Monitoring
+```bash
+# Prometheus
+curl http://35.180.38.208:9090/-/healthy
+
+# Métriques API
+curl http://35.180.38.208:8000/metrics
+
+# Grafana
+open http://35.180.38.208:3000
+```
+
+### AWS
+```bash
+# Update Security Group
+./scripts/update-aws-sg.sh
+
+# SSH EC2
+ssh -i ~/.ssh/lab-devops-key.pem ubuntu@35.180.38.208
 ```
 
 ---
 
-## MISE À JOUR - 2026-02-08 (Jalon 2 : Ansible + Docker EC2)
-
-### Session Jalon 2 : Installation Docker sur EC2 via Ansible
-
-**Durée** : 30 minutes
-
-**Réalisations** :
-- ✅ Structure Ansible créée (playbooks, inventories)
-- ✅ Inventaire staging avec EC2 configuré
-- ✅ Playbook install_docker.yml fonctionnel
-- ✅ Docker 29.2.1 installé sur EC2
-- ✅ Docker Compose v2.24.5 installé sur EC2
-- ✅ Test hello-world réussi
-
-**État EC2** :
-```bash
-# Docker version
-ssh ubuntu@35.180.54.218 "docker --version"
-# Docker version 29.2.1, build a5c7197
-
-# Docker Compose version
-ssh ubuntu@35.180.54.218 "docker-compose --version"
-# Docker Compose version v2.24.5
-
-# Service actif
-systemctl status docker
-# active (running)
-```
-
-**Fichiers Ansible** :
-- `ansible/inventories/staging/hosts.yml` : Configuration EC2
-- `ansible/playbooks/install_docker.yml` : Installation Docker
-
-**Commande pour réinstaller** :
-```bash
-ansible-playbook -i ansible/inventories/staging/hosts.yml \
-  ansible/playbooks/install_docker.yml
-```
-
-**Prochaines étapes** :
-1. Jalon 3 : Déployer l'API + PostgreSQL sur EC2
-2. Jalon 4 : Pipeline Jenkins (CI/CD)
-3. Jalon 5 : Scans DevSecOps
-
----
-
-## MISE À JOUR - 2026-02-08 (Jalon 4 : Jenkins partiel)
-
-### Session Jalon 4 : Installation Jenkins (partiel)
-
-**Durée** : 1h30
-
-**Réalisations** :
-- ✅ Jenkins 2.541.1 installé sur EC2
-- ✅ Port 8080 ouvert
-- ✅ Interface accessible (http://35.180.54.218:8080)
-- ✅ Jenkinsfile créé et versionné
-- ❌ Configuration job bloquée (permissions repo)
-
-**Leçons apprises** :
-- Jenkins sur EC2 + repo sur WSL = complexité inutile
-- Solution future : Git remote (GitHub/GitLab) ou repo bare sur EC2
-- Ansible fonctionne déjà très bien pour déploiement
-
-**État final** :
-- 3 jalons complétés sur 6
-- 17 commits Git
-- API en production
-- Infrastructure prête pour CI/CD (besoin configuration)
+**FIN DU DOCUMENT**  
+**Dernière modification** : 2026-02-22 19:00 UTC par administrator  
+**Version** : 2.0  
+**Statut projet** : ✅ **PRODUCTION READY** (97% complété)

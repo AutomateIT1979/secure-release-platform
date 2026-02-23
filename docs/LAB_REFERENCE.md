@@ -934,3 +934,324 @@ Finished: FAILURE
 
 **Démontre** : Maturité DevSecOps avec stratégies de sécurité adaptables.
 
+
+---
+
+## JALON 5b - INFRASTRUCTURE AS CODE (TERRAFORM) ✅ (2026-02-22)
+
+### Objectif
+
+Créer une EC2 dédiée aux scans de sécurité via Terraform, démontrant l'Infrastructure as Code.
+
+---
+
+### Architecture
+
+**Séparation des responsabilités** :
+- **EC2 #1** (35.180.38.208) : Jenkins + API + Prometheus + Grafana
+- **EC2 #2** (15.188.127.106) : Scans sécurité dédiés (Trivy + Gitleaks)
+
+**Avantages** :
+- Isolation sécurité
+- Scalabilité
+- Infrastructure reproductible
+
+---
+
+### Infrastructure Créée
+
+| Ressource | ID | Détails |
+|-----------|-----|---------|
+| **EC2 Instance** | `i-0895fb26e33d874d8` | t3.micro, Ubuntu 22.04 |
+| **Security Group** | `sg-05350268f9cd57c3b` | SSH port 22 uniquement |
+| **IP Publique** | `15.188.127.106` | Accessible |
+| **IP Privée** | `172.31.12.54` | VPC default |
+
+**Configuration** :
+- AMI : Ubuntu 22.04 LTS (ami-04c332520bd9cedb4)
+- Volume : 10GB gp3
+- Région : eu-west-3 (Paris)
+- SSH : ~/.ssh/lab-devops-key.pem
+
+---
+
+### Outils Pré-installés (user_data)
+
+Bootstrap automatique via user_data :
+- ✅ Docker 29.2.1
+- ✅ Trivy (aquasec/trivy:latest) - 245MB
+- ✅ Gitleaks (zricethezav/gitleaks:latest) - 75.8MB
+
+**Workspace** : `/opt/security-scans`
+
+---
+
+### Fichiers Terraform
+
+**Structure** :
+```
+terraform/
+├── main.tf                 # EC2 + Security Group
+├── variables.tf            # Configuration paramétrable
+├── outputs.tf              # Instance details
+├── terraform.tfvars        # Valeurs (gitignored)
+├── terraform.tfvars.example # Template
+└── .gitignore              # Protection secrets
+```
+
+**Commandes** :
+```bash
+cd terraform/
+terraform init
+terraform plan
+terraform apply
+terraform output
+```
+
+---
+
+### Métriques
+
+| Métrique | Valeur |
+|----------|--------|
+| Temps de déploiement | 22 secondes (terraform apply) |
+| Coût mensuel | ~$7.30 (couvert par crédits AWS) |
+| Fichiers Terraform | 5 fichiers (179 lignes) |
+| Bootstrap time | ~2 minutes (user_data) |
+
+**Commit** : `2794e72` - feat(terraform): add dedicated EC2 for security scanning
+
+---
+
+## JALON 6 - OBSERVABILITÉ (PROMETHEUS + GRAFANA) ⏳ 80% (2026-02-22)
+
+### Objectif
+
+Implémenter monitoring et métriques pour l'API FastAPI avec Prometheus et Grafana.
+
+---
+
+### Architecture Observabilité
+```
+FastAPI (port 8000)
+    ↓ expose /metrics
+Prometheus (port 9090)
+    ↓ scrape metrics every 10s
+Grafana (port 3000)
+    ↓ dashboards + alerting
+```
+
+**Déploiement** : EC2 #1 (35.180.38.208) via Docker Compose
+
+---
+
+### Phase 1 - Instrumentation FastAPI ✅
+
+**Dépendance ajoutée** :
+```python
+prometheus-fastapi-instrumentator==7.0.0
+prometheus-client==0.24.1
+```
+
+**Code modifié** : `app/main.py`
+```python
+from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
+# Instrument l'application
+Instrumentator().instrument(app)
+
+# Endpoint métriques manuel
+@app.get("/metrics")
+async def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+```
+
+**Endpoint** : `GET http://35.180.38.208:8000/metrics`
+
+**Métriques exposées** :
+- Python runtime : GC, memory, CPU
+- Process metrics : virtual/resident memory, open FDs
+- HTTP metrics : request count, size, duration
+
+---
+
+### Phase 2 - Déploiement Prometheus ✅
+
+**Configuration** : `observability/prometheus.yml`
+```yaml
+scrape_configs:
+  - job_name: 'fastapi'
+    static_configs:
+      - targets: ['api:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+```
+
+**Déploiement** : Docker Compose
+```yaml
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+```
+
+**Accès** : http://35.180.38.208:9090
+**Status** : ✅ Healthy ("Prometheus Server is Healthy")
+
+---
+
+### Phase 3 - Déploiement Grafana ✅
+
+**Configuration** :
+```yaml
+services:
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=SecurePass2026!
+```
+
+**Accès** : http://35.180.38.208:3000
+**Credentials** : admin / SecurePass2026!
+**Status** : ✅ Opérationnel (v12.3.3, database OK)
+
+---
+
+### Phase 4 - Dashboards & Alertes ⏳ TODO
+
+**Prochaines étapes** :
+1. Configurer datasource Prometheus dans Grafana
+2. Créer dashboards :
+   - HTTP requests (count, duration, status)
+   - Python runtime (GC, memory)
+   - Process metrics (CPU, FDs)
+3. Configurer alerting rules :
+   - API down (health check fail)
+   - Error rate > 5% (5xx responses)
+   - Response time > 1s
+
+---
+
+### Métriques
+
+| Métrique | Valeur |
+|----------|--------|
+| Services déployés | 2 (Prometheus + Grafana) |
+| Ports ouverts | 9090, 3000 |
+| Temps déploiement | ~3 minutes (pull images + start) |
+| Volumes Docker | 2 (prometheus_data, grafana_data) |
+| Scrape interval | 10 secondes |
+
+**Commits** :
+- `83588a9` - feat(observability): add Prometheus metrics endpoint
+- `7f1679f` - feat(observability): deploy Prometheus + Grafana stack
+
+---
+
+## INFRASTRUCTURE COMPLÈTE - ÉTAT ACTUEL (2026-02-22)
+
+### EC2 #1 - Jenkins + API + Observabilité
+
+| Paramètre | Valeur |
+|-----------|--------|
+| **ID** | i-01c77636889cc7f4a |
+| **Nom** | lab-devops-ec2 |
+| **IP Publique** | 35.180.38.208 |
+| **IP Privée** | 172.31.7.253 |
+| **Type** | t3.small (2GB RAM, 2 vCPU) |
+| **OS** | Ubuntu 22.04.5 LTS |
+| **Région** | eu-west-3 (Paris) |
+| **Security Group** | sg-0db21b6219faa2fca |
+
+**Services actifs** :
+- Jenkins (port 8080) : CI/CD automation
+- API FastAPI (port 8000) : Production API
+- PostgreSQL (port 5432) : Database
+- Prometheus (port 9090) : Metrics collection
+- Grafana (port 3000) : Dashboards
+
+**SSH** : `ssh -i ~/.ssh/lab-devops-key.pem ubuntu@35.180.38.208`
+
+---
+
+### EC2 #2 - Security Scans (Terraform)
+
+| Paramètre | Valeur |
+|-----------|--------|
+| **ID** | i-0895fb26e33d874d8 |
+| **Nom** | lab-devops-scans-ec2 |
+| **IP Publique** | 15.188.127.106 |
+| **IP Privée** | 172.31.12.54 |
+| **Type** | t3.micro (1GB RAM, 2 vCPU) |
+| **OS** | Ubuntu 22.04 LTS |
+| **Managed By** | Terraform ✨ |
+| **Security Group** | sg-05350268f9cd57c3b |
+
+**Outils pré-installés** :
+- Docker 29.2.1
+- Trivy (aquasec/trivy:latest)
+- Gitleaks (zricethezav/gitleaks:latest)
+
+**SSH** : `ssh -i ~/.ssh/lab-devops-key.pem ubuntu@15.188.127.106`
+
+---
+
+### Coûts AWS
+
+| Ressource | Coût mensuel | Statut |
+|-----------|--------------|--------|
+| EC2 t3.small | ~$15/mois | Couvert par crédits |
+| EC2 t3.micro | ~$7/mois | Couvert par crédits |
+| **Total** | **~$22/mois** | **$110 crédits = 5 mois** |
+
+**Crédits restants** : $110 USD (valides jusqu'au 9 juin 2026)
+
+---
+
+## PROGRESSION JALONS - MISE À JOUR (2026-02-22)
+
+| Jalon | Statut | Preuves | Date |
+|-------|--------|---------|------|
+| **1 - MVP local** | ✅ **100%** | Tests 7/7, Docker OK | 2026-02-08 |
+| **2 - Docker EC2** | ✅ **100%** | Ansible playbook OK | 2026-02-08 |
+| **3 - API Production** | ✅ **100%** | http://35.180.38.208:8000 | 2026-02-08 |
+| **4 - Jenkins CI/CD** | ✅ **100%** | Build #6 SUCCESS | 2026-02-22 |
+| **5a - DevSecOps Scans** | ✅ **100%** | Builds #7-10, Policy Gate | 2026-02-22 |
+| **5b - Terraform IaC** | ✅ **100%** | EC2 scans déployée | 2026-02-22 |
+| **6 - Observabilité** | ⏳ **80%** | Prometheus + Grafana OK | 2026-02-22 |
+
+**Score global** : 6.8/7 jalons = **97% complété** 🎯
+
+---
+
+## SESSION 2026-02-22 - RÉSUMÉ
+
+### Statistiques
+
+| Métrique | Valeur |
+|----------|--------|
+| **Durée session** | ~12 heures |
+| **Commits** | 26 commits |
+| **Builds Jenkins** | 10 (6 success, 4 instructifs) |
+| **EC2 créées** | 1 (via Terraform) |
+| **Services déployés** | 2 (Prometheus + Grafana) |
+| **Jalons complétés** | 3 (4, 5a, 5b) + 80% Jalon 6 |
+| **Lignes code/config** | 2000+ lignes |
+
+### Technologies Utilisées
+
+FastAPI • PostgreSQL • Docker • Ansible • Terraform • Jenkins • AWS EC2 • Trivy • Gitleaks • Prometheus • Grafana • Python 3.12 • Ubuntu • Git • YAML • HCL • pytest
+
+---
+
+**FIN DU DOCUMENT**
+**Dernière modification** : 2026-02-22 par administrator
+**Version** : 2.0
