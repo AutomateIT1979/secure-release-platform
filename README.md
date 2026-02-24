@@ -142,6 +142,7 @@ Deployed and managed via **Terraform** (Infrastructure as Code)
 | **5a. DevSecOps Security** | ✅ 100% | Trivy + Gitleaks + Policy gates |
 | **5b. Terraform IaC** | ✅ 100% | Dedicated EC2 for security scanning |
 | **6. Observability** | ✅ 100% | Prometheus + Grafana + 2 dashboards |
+| **7. Monitoring & Alerting** | ✅ 100% | Alertmanager + Slack integration + 8 alert rules |
 
 ---
 
