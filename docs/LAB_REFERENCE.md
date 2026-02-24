@@ -1,6 +1,6 @@
 # Lab DevSecOps - Document de Référence Complet
 **Date de création** : 2026-02-20  
-**Dernière vérification** : 2026-02-20  
+**Dernière vérification** : 2026-02-24
 **Objectif** : Source de vérité factuelle pour éviter toute supposition
 
 ---
@@ -167,70 +167,93 @@ ansible-playbook -i ansible/inventories/staging/hosts.yml \
 
 ---
 
-## 5) INFRASTRUCTURE AWS — ⚠️ DERNIÈRE INFO CONNUE (2026-02-08)
+## 5) INFRASTRUCTURE AWS — ✅ VÉRIFIÉ 2026-02-24
 
-### 5.1 Instance EC2
-**⚠️ INFO NON VÉRIFIÉE DEPUIS LE 2026-02-08**
+### 5.1 EC2 Instance #1 (Production)
 
-- **ID** : `i-XXXXXXXXXXXXX1`
-- **Nom** : `lab-devops-ec2`
-- **IP publique** : `YOUR_EC2_PUBLIC_IP_1` (peut avoir changé)
-- **IP privée** : `172.31.X.X`
-- **Région** : `eu-west-3` (Paris)
-- **OS** : Ubuntu 22.04.5 LTS
+**État** : ✅ Opérationnelle (vérifiée 2026-02-24)
 
-### 5.2 Security Group
-**⚠️ INFO NON VÉRIFIÉE DEPUIS LE 2026-02-08**
+| Attribut | Valeur |
+|----------|--------|
+| **ID** | `i-01c77636889cc7f4a` |
+| **Nom** | `lab-devops-ec2` |
+| **Type** | t3.small (2 vCPU, 2GB RAM) |
+| **IP Publique** | `35.180.38.208` |
+| **IP Privée** | `172.31.7.253` |
+| **Région** | eu-west-3 (Paris) |
+| **OS** | Ubuntu 22.04.5 LTS |
+| **Volume EBS** | 16GB (ID: vol-0a1f451a6c2eef749) |
+| **Usage Disque** | 50% (8.3GB libres) |
 
-- **ID** : `sg-XXXXXXXXXXXXXXXXX1`
-- **Règles inbound** :
-  - Port 22 (SSH) : `146.70.148.78/32` (IP locale, change régulièrement)
-  - Port 80 (HTTP) : `146.70.148.78/32`
-  - Port 8080 (Jenkins) : Ajouté lors de l'installation Jenkins
+**Services déployés** :
 
-### 5.3 Outils installés sur EC2 (dernier état connu)
-**⚠️ INFO NON VÉRIFIÉE DEPUIS LE 2026-02-08**
+| Service | Port | Version | Status |
+|---------|------|---------|--------|
+| Jenkins | 8080 | 2.541.1 | ✅ UP |
+| FastAPI | 8000 | 0.115.6 | ✅ UP |
+| PostgreSQL | 5432 | 15 | ✅ UP |
+| Prometheus | 9090 | latest | ✅ UP |
+| Alertmanager | 9093 | 0.31.1 | ✅ UP |
+| Grafana | 3000 | latest | ✅ UP |
 
-- ✅ Docker 29.2.1
-- ✅ Docker Compose v2.24.5
-- ✅ Nginx 1.18.0
-- ✅ Jenkins 2.541.1
-- ✅ Git 2.34.1
-- ✅ Python 3.10.12
+### 5.2 EC2 Instance #2 (Security Scanning)
+
+**État** : ✅ Opérationnelle (déployée via Terraform)
+
+| Attribut | Valeur |
+|----------|--------|
+| **ID** | `i-0895fb26e33d874d8` |
+| **Type** | t3.micro (2 vCPU, 1GB RAM) |
+| **IP Publique** | `15.188.127.106` |
+| **IP Privée** | `172.31.12.54` |
+| **Région** | eu-west-3 (Paris) |
+| **Usage** | Security scans (Trivy, Gitleaks) |
+
+**Services** :
+- Trivy (vulnerability scanning)
+- Gitleaks (secrets detection)
+
+### 5.3 Security Group
+
+**ID** : `sg-0db21b6219faa2fca`
+
+**Règles Inbound (vérifiées 2026-02-24)** :
+
+| Port | Protocol | Source | Service | Ajouté |
+|------|----------|--------|---------|--------|
+| 22 | TCP | Dynamic IP | SSH | Initial |
+| 80 | TCP | Dynamic IP | HTTP | Initial |
+| 8080 | TCP | Dynamic IP | Jenkins | Jalon 4 |
+| 8000 | TCP | Dynamic IP | API | Jalon 3 |
+| 3000 | TCP | Dynamic IP | Grafana | Jalon 6 |
+| 9090 | TCP | Dynamic IP | Prometheus | Jalon 6 |
+| 9093 | TCP | Dynamic IP | Alertmanager | Jalon 8 |
+
+**Note** : IP source change régulièrement (NordVPN + DHCP), mise à jour via `scripts/update-aws-sg.sh`
 
 ### 5.4 Connexion SSH
-**Commande** :
+
+**EC2 #1 (Production)** :
 ```bash
-ssh -i ~/.ssh/lab-devops-key.pem ubuntu@YOUR_EC2_PUBLIC_IP_1
+ssh -i ~/.ssh/lab-devops-key.pem ubuntu@35.180.38.208
 ```
 
-**⚠️ PROBLÈME CONNU** : L'IP publique locale change régulièrement, nécessite mise à jour du Security Group.
-
-**Solution temporaire** :
+**EC2 #2 (Security)** :
 ```bash
-# Obtenir IP actuelle
-curl -s ifconfig.me
-
-# Mettre à jour Security Group (nécessite AWS CLI configuré)
-aws ec2 authorize-security-group-ingress \
-  --group-id sg-XXXXXXXXXXXXXXXXX1 \
-  --protocol tcp --port 22 \
-  --cidr $(curl -s ifconfig.me)/32
+ssh -i ~/.ssh/lab-devops-key.pem ubuntu@15.188.127.106
 ```
-
----
-
 
 ### 5.5 Script d'auto-update Security Group
+
 **Script** : `scripts/update-aws-sg.sh`  
 **Usage** : `./scripts/update-aws-sg.sh`
 
 **Fonctionnement** :
 1. Détecte IP publique actuelle
 2. Nettoie anciennes règles
-3. Autorise nouvelle IP (ports 22, 80, 8080)
+3. Autorise nouvelle IP (ports 22, 80, 8080, 8000, 3000, 9090, 9093)
 
-**Résout** : Problème d'IP dynamique (NordVPN + DHCP)
+**⚠️ Problème résolu** : IP dynamique (NordVPN + DHCP)
 
 **Commande à exécuter avant chaque session** :
 ```bash
@@ -268,6 +291,44 @@ cd ~/lab-devops/secure-release-platform
 **Preuve** : Commits `8318067`, `6f26ba0`
 
 ---
+
+### Jalon 5a — DevSecOps Security (✅ COMPLÉTÉ)
+- Gitleaks : Scan secrets (0 détectés)
+- Trivy : Scan vulnérabilités conteneurs (5 HIGH)
+- Policy gates : Blocage si HIGH/CRITICAL
+
+**Preuve** : Build Jenkins #12 bloqué (comportement attendu)
+
+### Jalon 5b — Terraform IaC (✅ COMPLÉTÉ)
+- EC2 #2 dédiée security scanning
+- Terraform modules fonctionnels
+- State management configuré
+
+**Preuve** : EC2 `i-0895fb26e33d874d8` déployée
+
+### Jalon 6 — Observabilité (✅ COMPLÉTÉ)
+- Prometheus : Métriques collection (15s interval)
+- Grafana : 2 dashboards production
+- Métriques custom FastAPI (/metrics)
+
+**Preuve** : Dashboards opérationnels, Prometheus scraping API
+
+### Jalon 7 — GitHub Polish (✅ COMPLÉTÉ)
+- Repository sanitizé (0 secrets exposés)
+- README professionnel (280 lignes)
+- LICENSE MIT ajoutée
+- 4 screenshots capturés
+
+**Preuve** : Repository public https://github.com/AutomateIT1979/secure-release-platform
+
+### Jalon 8 — Monitoring & Alerting (✅ COMPLÉTÉ)
+- Alertmanager déployé (port 9093)
+- 8 règles d'alerting configurées
+- Slack webhook integration
+- Alertes testées (APIDown : FIRING + RESOLVED)
+
+**Preuve** : Commit `655a84f`, 3 screenshots monitoring, Slack notifications reçues
+
 
 ## 7) PROBLÈMES CONNUS ET SOLUTIONS
 
@@ -465,7 +526,7 @@ aws sts get-caller-identity 2>/dev/null || echo "AWS CLI non configuré ou erreu
 
 # 5) Date du dernier audit
 echo "=== AUDIT ==="
-echo "Dernière vérification LAB_REFERENCE.md : $(stat -c %y docs/LAB_REFERENCE.md | cut -d' ' -f1)"
+echo "Dernière vérification** : 2026-02-24
 echo "Date actuelle : $(date +%Y-%m-%d)"
 ```
 
@@ -499,7 +560,7 @@ md5sum docs/LAB_REFERENCE.md
 **Instructions pour Claude (ou toute IA)** :
 
 1. **TOUJOURS** lire `LAB_REFERENCE.md` avant de répondre à une question sur le Lab
-2. **VÉRIFIER** la date de "Dernière vérification" en début de document
+2. **VÉRIFIER** la date de "Dernière vérification** : 2026-02-24
 3. **SIGNALER** si une info semble obsolète (> 14 jours)
 4. **NE JAMAIS** supposer l'état de l'infrastructure AWS sans vérification
 5. **EXIGER** des preuves (commandes + outputs) avant de conclure
