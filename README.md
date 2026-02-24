@@ -42,10 +42,9 @@
 - **Health**: `/health` and `/version` endpoints
 
 #### 📊 Observability Stack
-- **Prometheus**: Metrics collection (10s scrape interval)
+- **Prometheus**: Metrics collection + Alerting rules evaluation
+- **Alertmanager**: Alert routing to Slack (8 rules configured)
 - **Grafana**: 2 production dashboards
-  - HTTP Metrics Dashboard (requests, status codes, latency)
-  - Python Runtime Dashboard (memory, CPU, garbage collection)
 
 ---
 
@@ -132,11 +131,11 @@ Deployed and managed via **Terraform** (Infrastructure as Code)
 
 ---
 
-## 🎯 Completed Milestones (7/7 = 100%)
+## 🎯 Completed Milestones (8/8 = 100%)
 
 | Milestone | Status | Description |
 |-----------|--------|-------------|
-| **1. MVP Local** | ✅ 100% | FastAPI API + PostgreSQL + Docker + Tests (7/7) |
+| **1. MVP Local** | ✅ 100% | FastAPI API + PostgreSQL + Docker + Tests (8/8) |
 | **2. Docker EC2** | ✅ 100% | Ansible playbook deploying Docker to AWS EC2 |
 | **3. API Production** | ✅ 100% | Production deployment with Ansible automation |
 | **4. Jenkins CI/CD** | ✅ 100% | Complete 6-stage pipeline with 10 builds |
