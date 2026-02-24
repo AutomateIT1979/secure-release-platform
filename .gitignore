@@ -24,3 +24,6 @@ terraform/terraform.tfstate*
 # Sensitive configuration files
 observability/prometheus.yml
 observability/docker-compose-observability.yml
+
+# Alertmanager (contient webhook secret)
+observability/alertmanager.yml
