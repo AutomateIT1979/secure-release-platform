@@ -1,0 +1,78 @@
+groups:
+  - name: infrastructure
+    interval: 30s
+    rules:
+      # Disk Space Alerts
+      - alert: DiskSpaceWarning
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk space warning on {{ $labels.instance }}"
+          description: "Disk space is below 20% ({{ $value | humanize }}% remaining)"
+
+      - alert: DiskSpaceCritical
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 10
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CRITICAL: Disk space on {{ $labels.instance }}"
+          description: "Disk space is below 10% ({{ $value | humanize }}% remaining) - IMMEDIATE ACTION REQUIRED"
+
+      # Memory Alerts
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 90% ({{ $value | humanize }}%)"
+
+  - name: services
+    interval: 30s
+    rules:
+      # API Health
+      - alert: APIDown
+        expr: up{job="fastapi"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "FastAPI service is DOWN"
+          description: "FastAPI on {{ $labels.instance }} has been down for more than 1 minute"
+
+      # API Latency
+      - alert: HighAPILatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="fastapi"}[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High API latency on {{ $labels.instance }}"
+          description: "95th percentile latency is {{ $value | humanize }}s (threshold: 1s)"
+
+      # PostgreSQL Health
+      - alert: PostgreSQLDown
+        expr: up{job="postgresql"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is DOWN"
+          description: "PostgreSQL on {{ $labels.instance }} has been down for more than 1 minute"
+
+  - name: security
+    interval: 1m
+    rules:
+      # Security Scan Failures
+      - alert: SecurityScanFailed
+        expr: increase(jenkins_job_failure_total{job=~".*security.*"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Security scan failed in Jenkins"
+          description: "Security scan job has failed - review Trivy/Gitleaks results"
